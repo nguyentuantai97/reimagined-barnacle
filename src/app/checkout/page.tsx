@@ -54,6 +54,14 @@ function getDiscountKm(subtotal: number): number {
 }
 
 /**
+ * Làm tròn km lên 0.5 để tính tiền
+ * VD: 2.1-2.49 → 2.5km, 2.51-2.99 → 3km
+ */
+function roundKmForBilling(km: number): number {
+  return Math.ceil(km * 2) / 2;
+}
+
+/**
  * Tính phí giao hàng
  * @param distance Khoảng cách (km)
  * @param subtotal Giá trị đơn hàng (chưa tính ship)
@@ -62,7 +70,8 @@ function calculateDeliveryFee(distance: number | null, subtotal: number): number
   if (distance === null) return 0; // Chưa có vị trí
 
   const discountKm = getDiscountKm(subtotal);
-  const chargeableKm = Math.max(0, Math.ceil(distance) - discountKm);
+  const roundedKm = roundKmForBilling(distance);
+  const chargeableKm = Math.max(0, roundedKm - discountKm);
 
   return chargeableKm * DELIVERY_PRICE_PER_KM;
 }
@@ -398,7 +407,7 @@ export default function CheckoutPage() {
                   </div>
                   {distance !== null && (
                     <div className="text-xs text-gray-500 space-y-1">
-                      <p>• Khoảng cách: {distance.toFixed(1)} km</p>
+                      <p>• Khoảng cách: {distance.toFixed(1)} km → tính {roundKmForBilling(distance)} km</p>
                       <p>• Giá ship: 5.000đ/km</p>
                       {discountKm > 0 && (
                         <p className="text-green-600">• Giảm {discountKm} km (đơn từ {formatPriceShort(discountKm * 100000)})</p>
