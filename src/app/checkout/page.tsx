@@ -21,20 +21,47 @@ const SHOP_LOCATION = {
 // Giá ship: 5.000đ/km
 const DELIVERY_PRICE_PER_KM = 5000;
 
-// Hệ số điều chỉnh: đường đi thực tế thường gấp ~1.4 lần đường chim bay
-const ROAD_FACTOR = 1.4;
+/**
+ * Tính khoảng cách đường đi thực tế bằng OSRM API (miễn phí)
+ * Sử dụng OpenStreetMap routing - chính xác như Google Maps
+ */
+async function calculateRoadDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): Promise<number> {
+  try {
+    // OSRM API: lon,lat format (ngược với Google Maps)
+    const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+      // Khoảng cách trả về là mét, chuyển sang km
+      const distanceInKm = data.routes[0].distance / 1000;
+      return distanceInKm;
+    }
+
+    // Fallback: nếu OSRM fail, dùng Haversine x 2.5
+    return calculateHaversineDistance(lat1, lon1, lat2, lon2) * 2.5;
+  } catch {
+    // Fallback: nếu lỗi mạng, dùng Haversine x 2.5
+    return calculateHaversineDistance(lat1, lon1, lat2, lon2) * 2.5;
+  }
+}
 
 /**
- * Tính khoảng cách giữa 2 điểm GPS (km) - Haversine formula
- * Đã nhân hệ số 1.4 để ước tính khoảng cách đường đi thực tế
+ * Tính khoảng cách đường chim bay (backup)
  */
-function calculateDistance(
+function calculateHaversineDistance(
   lat1: number,
   lon1: number,
   lat2: number,
   lon2: number
 ): number {
-  const R = 6371; // Bán kính Trái Đất (km)
+  const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -44,10 +71,7 @@ function calculateDistance(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const straightDistance = R * c;
-
-  // Nhân hệ số để ước tính khoảng cách đường đi thực tế
-  return straightDistance * ROAD_FACTOR;
+  return R * c;
 }
 
 /**
@@ -131,15 +155,15 @@ export default function CheckoutPage() {
 
     setIsGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         setFormData((prev) => ({
           ...prev,
           latitude,
           longitude,
         }));
-        // Tính khoảng cách từ quán đến khách
-        const dist = calculateDistance(
+        // Tính khoảng cách đường đi thực tế bằng OSRM API
+        const dist = await calculateRoadDistance(
           SHOP_LOCATION.latitude,
           SHOP_LOCATION.longitude,
           latitude,
