@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,28 +16,33 @@ import { formatPriceShort, isValidVietnamesePhone } from '@/lib/format';
 const DELIVERY_PRICE_PER_KM = 5000;
 
 /**
- * Tính khoảng cách đường đi thực tế bằng API route (gọi OSRM từ server)
+ * Tính khoảng cách đường đi thực tế bằng API route
+ * Hỗ trợ cả GPS và geocoding từ địa chỉ
  */
-async function calculateRoadDistance(
-  latitude: number,
-  longitude: number
-): Promise<number> {
+async function calculateDistance(params: {
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+}): Promise<{ distance: number; coordinates?: { latitude: number; longitude: number } } | { error: string }> {
   try {
     const response = await fetch('/api/distance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ latitude, longitude }),
+      body: JSON.stringify(params),
     });
 
     const data = await response.json();
 
     if (data.success) {
-      return data.distance;
+      return {
+        distance: data.distance,
+        coordinates: data.coordinates,
+      };
     }
 
-    return 10; // Default 10km nếu lỗi
+    return { error: data.error || 'Không thể tính khoảng cách' };
   } catch {
-    return 10; // Default 10km nếu lỗi
+    return { error: 'Lỗi kết nối. Vui lòng thử lại.' };
   }
 }
 
@@ -81,8 +86,10 @@ export default function CheckoutPage() {
   const { items, getSubtotal, clearCart } = useCartStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isCalculatingFromAddress, setIsCalculatingFromAddress] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [distance, setDistance] = useState<number | null>(null);
+  const [distanceSource, setDistanceSource] = useState<'gps' | 'address' | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -123,7 +130,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const getLocation = () => {
+  // Lấy vị trí từ GPS
+  const getLocationFromGPS = () => {
     if (!navigator.geolocation) {
       alert('Trình duyệt không hỗ trợ định vị');
       return;
@@ -138,16 +146,48 @@ export default function CheckoutPage() {
           latitude,
           longitude,
         }));
-        // Tính khoảng cách đường đi thực tế bằng API (OSRM từ server)
-        const dist = await calculateRoadDistance(latitude, longitude);
-        setDistance(dist);
+        const result = await calculateDistance({ latitude, longitude });
+        if ('distance' in result) {
+          setDistance(result.distance);
+          setDistanceSource('gps');
+        } else {
+          alert(result.error);
+        }
         setIsGettingLocation(false);
       },
       () => {
-        alert('Không thể lấy vị trí. Vui lòng nhập địa chỉ thủ công.');
+        alert('Không thể lấy vị trí GPS. Vui lòng dùng nút "Tính phí ship" từ địa chỉ.');
         setIsGettingLocation(false);
       }
     );
+  };
+
+  // Tính khoảng cách từ địa chỉ text (geocoding)
+  const calculateFromAddress = async () => {
+    if (!formData.address.trim()) {
+      setErrors((prev) => ({ ...prev, address: 'Vui lòng nhập địa chỉ' }));
+      return;
+    }
+
+    setIsCalculatingFromAddress(true);
+    const result = await calculateDistance({ address: formData.address });
+
+    if ('distance' in result) {
+      setDistance(result.distance);
+      setDistanceSource('address');
+      if (result.coordinates) {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: result.coordinates!.latitude,
+          longitude: result.coordinates!.longitude,
+        }));
+      }
+      setErrors((prev) => ({ ...prev, address: '' }));
+    } else {
+      setErrors((prev) => ({ ...prev, address: result.error }));
+    }
+
+    setIsCalculatingFromAddress(false);
   };
 
   const validate = () => {
@@ -314,9 +354,10 @@ export default function CheckoutPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={getLocation}
+                        onClick={getLocationFromGPS}
                         disabled={isGettingLocation}
                         className="shrink-0"
+                        title="Lấy vị trí GPS"
                       >
                         {isGettingLocation ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -324,13 +365,30 @@ export default function CheckoutPage() {
                           <MapPin className="h-4 w-4" />
                         )}
                       </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={calculateFromAddress}
+                        disabled={isCalculatingFromAddress || !formData.address.trim()}
+                        className="shrink-0"
+                        title="Tính phí ship từ địa chỉ"
+                      >
+                        {isCalculatingFromAddress ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
+                    <p className="text-xs text-gray-500">
+                      Bấm <MapPin className="h-3 w-3 inline" /> để dùng GPS hoặc <Search className="h-3 w-3 inline" /> để tính từ địa chỉ
+                    </p>
                     {errors.address && (
                       <p className="text-sm text-red-500">{errors.address}</p>
                     )}
                     {distance !== null && (
                       <p className="text-sm text-green-600">
-                        ✓ Đã lấy vị trí - Khoảng cách: {distance.toFixed(1)} km
+                        ✓ {distanceSource === 'gps' ? 'GPS' : 'Địa chỉ'} - Khoảng cách: {distance.toFixed(1)} km
                       </p>
                     )}
                   </div>

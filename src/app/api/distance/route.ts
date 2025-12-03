@@ -29,28 +29,96 @@ function calculateHaversineDistance(
   return R * c;
 }
 
-export async function POST(request: NextRequest) {
+/**
+ * Geocode địa chỉ thành tọa độ GPS bằng Nominatim (OpenStreetMap)
+ */
+async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
-    const { latitude, longitude } = await request.json();
+    // Thêm "Hồ Chí Minh" để tăng độ chính xác
+    const searchAddress = address.includes('Hồ Chí Minh') || address.includes('HCM')
+      ? address
+      : `${address}, Hồ Chí Minh, Việt Nam`;
 
-    if (!latitude || !longitude) {
-      return NextResponse.json(
-        { error: 'Missing latitude or longitude' },
-        { status: 400 }
-      );
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=1`;
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'ANMilkTea/1.0 (anmilktea.online)',
+      },
+    });
+
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lon: parseFloat(data[0].lon),
+      };
     }
 
-    // Gọi OSRM API từ server (bypass CORS)
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${SHOP_LOCATION.longitude},${SHOP_LOCATION.latitude};${longitude},${latitude}?overview=false`;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Tính khoảng cách đường đi bằng OSRM
+ */
+async function calculateOSRMDistance(lat: number, lon: number): Promise<number | null> {
+  try {
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${SHOP_LOCATION.longitude},${SHOP_LOCATION.latitude};${lon},${lat}?overview=false`;
 
     const response = await fetch(osrmUrl);
     const data = await response.json();
 
     if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-      const distanceInKm = data.routes[0].distance / 1000;
+      return data.routes[0].distance / 1000;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { latitude, longitude, address } = body;
+
+    let customerLat = latitude;
+    let customerLon = longitude;
+
+    // Nếu không có tọa độ GPS nhưng có địa chỉ, geocode địa chỉ
+    if ((!customerLat || !customerLon) && address) {
+      const coords = await geocodeAddress(address);
+      if (coords) {
+        customerLat = coords.lat;
+        customerLon = coords.lon;
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: 'Không tìm thấy địa chỉ. Vui lòng nhập chi tiết hơn hoặc dùng GPS.',
+        });
+      }
+    }
+
+    if (!customerLat || !customerLon) {
+      return NextResponse.json(
+        { error: 'Missing latitude/longitude or address' },
+        { status: 400 }
+      );
+    }
+
+    // Tính khoảng cách bằng OSRM
+    const osrmDistance = await calculateOSRMDistance(customerLat, customerLon);
+
+    if (osrmDistance !== null) {
       return NextResponse.json({
         success: true,
-        distance: distanceInKm,
+        distance: osrmDistance,
+        coordinates: { latitude: customerLat, longitude: customerLon },
         source: 'osrm',
       });
     }
@@ -59,18 +127,18 @@ export async function POST(request: NextRequest) {
     const haversine = calculateHaversineDistance(
       SHOP_LOCATION.latitude,
       SHOP_LOCATION.longitude,
-      latitude,
-      longitude
+      customerLat,
+      customerLon
     );
     return NextResponse.json({
       success: true,
       distance: haversine * 2.5,
+      coordinates: { latitude: customerLat, longitude: customerLon },
       source: 'haversine',
     });
   } catch (error) {
     console.error('Distance API error:', error);
 
-    // Fallback if everything fails
     return NextResponse.json(
       { error: 'Failed to calculate distance' },
       { status: 500 }
