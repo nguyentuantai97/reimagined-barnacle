@@ -12,66 +12,33 @@ import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPriceShort, isValidVietnamesePhone } from '@/lib/format';
 
-// Tọa độ quán AN Milk Tea - 112 Hoàng Phan Thái, Bình Chánh
-const SHOP_LOCATION = {
-  latitude: 10.6847,
-  longitude: 106.6095,
-};
-
 // Giá ship: 5.000đ/km
 const DELIVERY_PRICE_PER_KM = 5000;
 
 /**
- * Tính khoảng cách đường đi thực tế bằng OSRM API (miễn phí)
- * Sử dụng OpenStreetMap routing - chính xác như Google Maps
+ * Tính khoảng cách đường đi thực tế bằng API route (gọi OSRM từ server)
  */
 async function calculateRoadDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
+  latitude: number,
+  longitude: number
 ): Promise<number> {
   try {
-    // OSRM API: lon,lat format (ngược với Google Maps)
-    const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`;
+    const response = await fetch('/api/distance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ latitude, longitude }),
+    });
 
-    const response = await fetch(url);
     const data = await response.json();
 
-    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-      // Khoảng cách trả về là mét, chuyển sang km
-      const distanceInKm = data.routes[0].distance / 1000;
-      return distanceInKm;
+    if (data.success) {
+      return data.distance;
     }
 
-    // Fallback: nếu OSRM fail, dùng Haversine x 2.5
-    return calculateHaversineDistance(lat1, lon1, lat2, lon2) * 2.5;
+    return 10; // Default 10km nếu lỗi
   } catch {
-    // Fallback: nếu lỗi mạng, dùng Haversine x 2.5
-    return calculateHaversineDistance(lat1, lon1, lat2, lon2) * 2.5;
+    return 10; // Default 10km nếu lỗi
   }
-}
-
-/**
- * Tính khoảng cách đường chim bay (backup)
- */
-function calculateHaversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
 }
 
 /**
@@ -162,13 +129,8 @@ export default function CheckoutPage() {
           latitude,
           longitude,
         }));
-        // Tính khoảng cách đường đi thực tế bằng OSRM API
-        const dist = await calculateRoadDistance(
-          SHOP_LOCATION.latitude,
-          SHOP_LOCATION.longitude,
-          latitude,
-          longitude
-        );
+        // Tính khoảng cách đường đi thực tế bằng API (OSRM từ server)
+        const dist = await calculateRoadDistance(latitude, longitude);
         setDistance(dist);
         setIsGettingLocation(false);
       },
