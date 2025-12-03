@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Tọa độ quán AN Milk Tea - 112 Hoàng Phan Thái, Bình Chánh
+// Tọa độ quán AN Milk Tea - Đường Hoàng Phan Thái, Bình Chánh
+// Plus Code: MH87+MXF (7P28MH87+MXF)
 const SHOP_LOCATION = {
-  latitude: 10.6847,
-  longitude: 106.6095,
+  latitude: 10.6667,
+  longitude: 106.5649,
 };
 
 /**
