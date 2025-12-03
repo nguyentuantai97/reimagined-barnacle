@@ -21,8 +21,12 @@ const SHOP_LOCATION = {
 // Giá ship: 5.000đ/km
 const DELIVERY_PRICE_PER_KM = 5000;
 
+// Hệ số điều chỉnh: đường đi thực tế thường gấp ~1.4 lần đường chim bay
+const ROAD_FACTOR = 1.4;
+
 /**
  * Tính khoảng cách giữa 2 điểm GPS (km) - Haversine formula
+ * Đã nhân hệ số 1.4 để ước tính khoảng cách đường đi thực tế
  */
 function calculateDistance(
   lat1: number,
@@ -40,7 +44,10 @@ function calculateDistance(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  const straightDistance = R * c;
+
+  // Nhân hệ số để ước tính khoảng cách đường đi thực tế
+  return straightDistance * ROAD_FACTOR;
 }
 
 /**
