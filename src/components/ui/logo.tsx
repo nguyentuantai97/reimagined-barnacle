@@ -24,8 +24,7 @@ export function Logo({
 
   const { width, height, text } = sizes[size];
 
-  // Header variant - Phong cách tối giản như KOI, Phúc Long, Phê La
-  // Chỉ hiển thị logo + tên brand đơn giản, không quá nhiều chi tiết
+  // Header variant - Logo nền nâu chữ AN trắng
   if (variant === 'header') {
     const headerSizes = {
       sm: { width: 36, height: 36 },
@@ -38,7 +37,7 @@ export function Logo({
 
     return (
       <Image
-        src="/logo-an-icon.png"
+        src="/logo-an-brown.png"
         alt="AN Milk Tea & Tea"
         width={hSize.width}
         height={hSize.height}
@@ -62,11 +61,11 @@ export function Logo({
     );
   }
 
-  // Logo đầy đủ với nền nâu (chỉ ảnh)
+  // Logo đầy đủ - nền nâu chữ AN trắng
   if (variant === 'full') {
     return (
       <Image
-        src="/logo AN.png"
+        src="/logo-an-brown.png"
         alt="AN Milk Tea & Tea"
         width={width}
         height={height}
