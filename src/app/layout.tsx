@@ -16,6 +16,10 @@ export const metadata: Metadata = {
     'Thưởng thức hương vị trà sữa thơm ngon, đậm đà tại AN Milk Tea. Đặt hàng online, giao tận nơi!',
   keywords: ['trà sữa', 'milk tea', 'AN Milk Tea', 'đặt hàng online', 'giao hàng', 'Bình Chánh'],
   metadataBase: new URL('https://anmilktea.online'),
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
   openGraph: {
     title: 'AN Milk Tea & Tea - Đặt hàng online',
     description: 'Thưởng thức hương vị trà sữa thơm ngon, đậm đà tại AN Milk Tea.',
