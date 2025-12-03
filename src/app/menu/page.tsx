@@ -120,7 +120,7 @@ function MenuContent() {
               </p>
             </div>
 
-            {/* Search Bar */}
+            {/* Search Bar with Refresh */}
             <div className="max-w-xl mx-auto">
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300" />
@@ -136,7 +136,7 @@ function MenuContent() {
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="mr-4 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="mr-2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       <span className="sr-only">Clear</span>
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,23 +144,16 @@ function MenuContent() {
                       </svg>
                     </button>
                   )}
+                  {/* Refresh Button - Integrated into search bar */}
+                  <button
+                    onClick={refetch}
+                    disabled={isLoading}
+                    className="mr-3 p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-all disabled:opacity-50"
+                    title="Làm mới menu"
+                  >
+                    <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+                  </button>
                 </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="flex items-center justify-center gap-6 mt-4 text-sm text-gray-500">
-                <span>{products.length} sản phẩm</span>
-                <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                <span>{categories.length} danh mục</span>
-                <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                <button
-                  onClick={refetch}
-                  disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-800 transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                  <span>{isLoading ? 'Đang tải...' : 'Làm mới'}</span>
-                </button>
               </div>
             </div>
           </div>

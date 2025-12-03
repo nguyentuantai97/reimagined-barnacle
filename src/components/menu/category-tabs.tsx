@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Category } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,17 @@ export function CategoryTabs({
 }: CategoryTabsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeButtonRef = useRef<HTMLButtonElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+
+  // Check scroll position to show/hide arrows
+  const checkScrollPosition = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeftArrow(scrollLeft > 10);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
 
   // Scroll to active button when category changes
   useEffect(() => {
@@ -35,21 +47,48 @@ export function CategoryTabs({
     }
   }, [activeCategory]);
 
+  // Check scroll on mount and resize
+  useEffect(() => {
+    checkScrollPosition();
+    window.addEventListener('resize', checkScrollPosition);
+    return () => window.removeEventListener('resize', checkScrollPosition);
+  }, [categories]);
+
+  const scrollBy = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 200;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   const allCategories = [
     { id: 'all', slug: 'all', name: 'Tất cả' },
     ...categories,
   ];
 
   return (
-    <div className="relative">
-      {/* Gradient fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+    <div className="relative flex items-center gap-2">
+      {/* Left Arrow Button */}
+      <button
+        onClick={() => scrollBy('left')}
+        className={cn(
+          'flex-shrink-0 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center transition-all duration-200',
+          'hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700',
+          showLeftArrow ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        aria-label="Scroll left"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
 
       {/* Scrollable container */}
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 px-2 -mx-2"
+        onScroll={checkScrollPosition}
+        className="flex gap-2 overflow-x-auto scrollbar-hide flex-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {allCategories.map((category) => {
@@ -84,6 +123,19 @@ export function CategoryTabs({
           );
         })}
       </div>
+
+      {/* Right Arrow Button */}
+      <button
+        onClick={() => scrollBy('right')}
+        className={cn(
+          'flex-shrink-0 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center transition-all duration-200',
+          'hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700',
+          showRightArrow ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        aria-label="Scroll right"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }

@@ -40,8 +40,8 @@ export function Header() {
             <Logo size="md" variant="header" className="transition-transform group-hover:scale-105" />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Desktop Navigation - Centered */}
+          <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             {/* Trang chủ */}
             <Link
               href="/"

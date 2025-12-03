@@ -438,7 +438,7 @@ export default function CheckoutPage() {
                       <div className="flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1.5 text-gray-600">
                           <Clock className="h-4 w-4" />
-                          <span>8:00 - 22:00</span>
+                          <span>10:00 - 21:00</span>
                         </div>
                         <a
                           href={SHOP_GOOGLE_MAPS}

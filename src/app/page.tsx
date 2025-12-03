@@ -130,7 +130,7 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Mở cửa hàng ngày</h3>
-                <p className="text-sm text-muted-foreground">8:00 - 22:00</p>
+                <p className="text-sm text-muted-foreground">10:00 - 21:00</p>
               </div>
             </div>
           </div>
