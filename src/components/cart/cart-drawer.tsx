@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingBag, ArrowRight, X } from 'lucide-react';
+import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,23 +17,15 @@ export function CartDrawer() {
   return (
     <Sheet open={isOpen} onOpenChange={closeCart}>
       <SheetContent className="w-full sm:max-w-md flex flex-col p-0 gap-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-amber-50 to-orange-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-              <ShoppingBag className="h-5 w-5 text-amber-700" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-gray-900">Giỏ hàng</h2>
-              <p className="text-sm text-gray-500">{itemCount} sản phẩm</p>
-            </div>
+        {/* Header - SheetContent has built-in close button at top-right */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b bg-gradient-to-r from-amber-50 to-orange-50">
+          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+            <ShoppingBag className="h-5 w-5 text-amber-700" />
           </div>
-          <button
-            onClick={closeCart}
-            className="w-8 h-8 rounded-full hover:bg-white/80 flex items-center justify-center transition-colors"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
+          <div>
+            <h2 className="font-semibold text-gray-900">Giỏ hàng</h2>
+            <p className="text-sm text-gray-500">{itemCount} sản phẩm</p>
+          </div>
         </div>
 
         {items.length === 0 ? (

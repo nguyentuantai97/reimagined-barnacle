@@ -1,11 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Product, Category } from '@/types';
-import {
-  products as staticProducts,
-  categories as staticCategories,
-} from '@/lib/data/menu';
 
 interface MenuData {
   categories: Category[];
@@ -23,27 +19,40 @@ interface UseMenuResult {
   getProductById: (id: string) => Product | undefined;
 }
 
-// Cache menu data in memory
+// Cache menu data in memory (shared across all hook instances)
 let menuCache: MenuData | null = null;
 let lastFetchTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 export function useMenu(): UseMenuResult {
-  const [data, setData] = useState<MenuData>({
-    categories: staticCategories,
-    products: staticProducts,
+  // Start with cached data if available, otherwise empty
+  const [data, setData] = useState<MenuData>(() => {
+    if (menuCache) {
+      return menuCache;
+    }
+    return {
+      categories: [],
+      products: [],
+    };
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(!menuCache);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
 
-  const fetchMenu = async () => {
-    // Check cache first
+  const fetchMenu = async (forceRefresh = false) => {
+    // Prevent duplicate fetches
+    if (fetchingRef.current) return;
+
+    // Check cache first (unless force refresh)
     const now = Date.now();
-    if (menuCache && now - lastFetchTime < CACHE_DURATION) {
-      setData(menuCache);
+    if (!forceRefresh && menuCache && now - lastFetchTime < CACHE_DURATION) {
+      if (data.products.length === 0) {
+        setData(menuCache);
+      }
       return;
     }
 
+    fetchingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -64,24 +73,29 @@ export function useMenu(): UseMenuResult {
 
         setData(newData);
       } else {
-        // Fall back to static data on error
-        console.warn('Using static menu data:', result.error);
-        setData({
-          categories: staticCategories,
-          products: staticProducts,
-        });
+        // Keep current data if we have it, otherwise show error
+        console.warn('Menu API error:', result.error);
+        if (menuCache) {
+          setData(menuCache);
+        }
+        setError(result.error || 'Không thể tải menu');
       }
     } catch (err) {
       console.error('Failed to fetch menu:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load menu');
-      // Fall back to static data
-      setData({
-        categories: staticCategories,
-        products: staticProducts,
-      });
+      setError(err instanceof Error ? err.message : 'Không thể tải menu');
+      // Keep current cached data if available
+      if (menuCache) {
+        setData(menuCache);
+      }
     } finally {
       setIsLoading(false);
+      fetchingRef.current = false;
     }
+  };
+
+  // Refetch function for manual refresh
+  const refetch = async () => {
+    await fetchMenu(true); // Force refresh
   };
 
   useEffect(() => {
@@ -101,7 +115,7 @@ export function useMenu(): UseMenuResult {
     products: data.products,
     isLoading,
     error,
-    refetch: fetchMenu,
+    refetch,
     getProductsByCategory,
     getProductById,
   };
