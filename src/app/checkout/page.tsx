@@ -1,0 +1,369 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, MapPin, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { useCartStore } from '@/stores/cart-store';
+import { formatPriceShort, isValidVietnamesePhone } from '@/lib/format';
+
+export default function CheckoutPage() {
+  const router = useRouter();
+  const { items, getSubtotal, clearCart } = useCartStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    note: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+  });
+
+  const subtotal = getSubtotal();
+  const deliveryFee = 15000;
+  const total = subtotal + deliveryFee;
+
+  // Redirect if cart is empty
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <span className="text-6xl mb-4 block">🛒</span>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Giỏ hàng trống</h1>
+          <p className="text-gray-500 mb-4">Vui lòng thêm sản phẩm vào giỏ hàng</p>
+          <Button asChild className="bg-amber-600 hover:bg-amber-700">
+            <Link href="/menu">Xem Menu</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const getLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Trình duyệt không hỗ trợ định vị');
+      return;
+    }
+
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+        setIsGettingLocation(false);
+      },
+      () => {
+        alert('Không thể lấy vị trí. Vui lòng nhập địa chỉ thủ công.');
+        setIsGettingLocation(false);
+      }
+    );
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Vui lòng nhập họ tên';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Vui lòng nhập số điện thoại';
+    } else if (!isValidVietnamesePhone(formData.phone)) {
+      newErrors.phone = 'Số điện thoại không hợp lệ';
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = 'Vui lòng nhập địa chỉ giao hàng';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare order data
+      const orderData = {
+        customer: {
+          name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          note: formData.note,
+        },
+        items: items.map((item) => ({
+          productId: item.product.id,
+          cukcukId: item.product.cukcukId,
+          cukcukCode: item.product.cukcukCode,
+          cukcukItemType: item.product.cukcukItemType,
+          cukcukUnitId: item.product.cukcukUnitId,
+          cukcukUnitName: item.product.cukcukUnitName,
+          name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price,
+          amount: item.totalPrice,
+          options: item.selectedOptions,
+          note: item.note,
+        })),
+        subtotal,
+        deliveryFee,
+        total,
+      };
+
+      // Call API to create order
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Clear cart and redirect to success page
+        clearCart();
+        router.push(`/order-success?orderNo=${result.data.orderNo}`);
+      } else {
+        alert(result.error || 'Có lỗi xảy ra. Vui lòng thử lại.');
+      }
+    } catch {
+      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        {/* Back Link */}
+        <Link
+          href="/menu"
+          className="inline-flex items-center text-amber-700 hover:text-amber-800 mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Tiếp tục mua sắm
+        </Link>
+
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">
+          Thanh toán
+        </h1>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Customer Form */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Thông tin giao hàng</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="name">
+                      Họ tên <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Nhập họ tên người nhận"
+                      className={errors.name ? 'border-red-500' : ''}
+                    />
+                    {errors.name && (
+                      <p className="text-sm text-red-500">{errors.name}</p>
+                    )}
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      Số điện thoại <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="Nhập số điện thoại (VD: 0909123456)"
+                      className={errors.phone ? 'border-red-500' : ''}
+                    />
+                    {errors.phone && (
+                      <p className="text-sm text-red-500">{errors.phone}</p>
+                    )}
+                  </div>
+
+                  {/* Address */}
+                  <div className="space-y-2">
+                    <Label htmlFor="address">
+                      Địa chỉ giao hàng <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        placeholder="Nhập địa chỉ giao hàng"
+                        className={`flex-1 ${errors.address ? 'border-red-500' : ''}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={getLocation}
+                        disabled={isGettingLocation}
+                        className="shrink-0"
+                      >
+                        {isGettingLocation ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <MapPin className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {errors.address && (
+                      <p className="text-sm text-red-500">{errors.address}</p>
+                    )}
+                    {formData.latitude && formData.longitude && (
+                      <p className="text-sm text-green-600">
+                        Đã lấy vị trí GPS
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Note */}
+                  <div className="space-y-2">
+                    <Label htmlFor="note">Ghi chú (tuỳ chọn)</Label>
+                    <textarea
+                      id="note"
+                      name="note"
+                      value={formData.note}
+                      onChange={handleChange}
+                      placeholder="Ghi chú cho đơn hàng (VD: Giao trước 12h, gọi trước khi giao...)"
+                      rows={3}
+                      className="w-full px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  {/* Submit Button - Desktop */}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-base hidden lg:flex"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Đang xử lý...
+                      </>
+                    ) : (
+                      `Xác nhận đặt hàng - ${formatPriceShort(total)}`
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-20">
+              <CardHeader>
+                <CardTitle>Đơn hàng ({items.length} sản phẩm)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Items */}
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <div className="flex-1 min-w-0 mr-2">
+                        <p className="font-medium truncate">{item.product.name}</p>
+                        <p className="text-gray-500">x{item.quantity}</p>
+                      </div>
+                      <span className="shrink-0">{formatPriceShort(item.totalPrice)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Separator />
+
+                {/* Totals */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Tạm tính</span>
+                    <span>{formatPriceShort(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Phí giao hàng</span>
+                    <span>{formatPriceShort(deliveryFee)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Tổng cộng</span>
+                    <span className="text-amber-700">{formatPriceShort(total)}</span>
+                  </div>
+                </div>
+
+                {/* Payment Method Note */}
+                <div className="bg-amber-50 p-3 rounded-lg text-sm">
+                  <p className="font-medium text-amber-800 mb-1">Thanh toán khi nhận hàng (COD)</p>
+                  <p className="text-amber-600">
+                    Quý khách vui lòng thanh toán khi nhận hàng
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Submit Button - Mobile */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-base"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  `Xác nhận đặt hàng - ${formatPriceShort(total)}`
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
