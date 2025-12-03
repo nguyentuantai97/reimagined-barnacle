@@ -38,11 +38,11 @@ export function Logo({
 
     return (
       <Image
-        src="/logo AN.png"
+        src="/logo-an-icon.png"
         alt="AN Milk Tea & Tea"
         width={hSize.width}
         height={hSize.height}
-        className={cn('object-contain', className)}
+        className={cn('object-contain rounded-lg', className)}
         priority
       />
     );
