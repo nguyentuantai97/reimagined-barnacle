@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Logo } from '@/components/ui/logo';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPriceShort, isValidVietnamesePhone } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -427,9 +428,7 @@ export default function CheckoutPage() {
                     /* Pickup Location Info */
                     <div className="bg-amber-50 rounded-xl p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                          <Store className="h-5 w-5 text-amber-700" />
-                        </div>
+                        <Logo size="sm" variant="full" className="shrink-0" />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900">AN Milk Tea & Tea</h4>
                           <p className="text-sm text-gray-600 mt-1">{SHOP_ADDRESS}</p>
