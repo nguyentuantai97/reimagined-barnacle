@@ -12,12 +12,70 @@ import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPriceShort, isValidVietnamesePhone } from '@/lib/format';
 
+// Tọa độ quán AN Milk Tea - 112 Hoàng Phan Thái, Bình Chánh
+const SHOP_LOCATION = {
+  latitude: 10.6847,
+  longitude: 106.6095,
+};
+
+// Giá ship: 5.000đ/km
+const DELIVERY_PRICE_PER_KM = 5000;
+
+/**
+ * Tính khoảng cách giữa 2 điểm GPS (km) - Haversine formula
+ */
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Bán kính Trái Đất (km)
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Tính số km được giảm dựa theo giá trị đơn hàng
+ * - 100k-199k: giảm 1km
+ * - 200k-299k: giảm 2km
+ * - 300k-399k: giảm 3km
+ * - ...
+ */
+function getDiscountKm(subtotal: number): number {
+  if (subtotal < 100000) return 0;
+  return Math.floor(subtotal / 100000);
+}
+
+/**
+ * Tính phí giao hàng
+ * @param distance Khoảng cách (km)
+ * @param subtotal Giá trị đơn hàng (chưa tính ship)
+ */
+function calculateDeliveryFee(distance: number | null, subtotal: number): number {
+  if (distance === null) return 0; // Chưa có vị trí
+
+  const discountKm = getDiscountKm(subtotal);
+  const chargeableKm = Math.max(0, Math.ceil(distance) - discountKm);
+
+  return chargeableKm * DELIVERY_PRICE_PER_KM;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getSubtotal, clearCart } = useCartStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [distance, setDistance] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -29,7 +87,8 @@ export default function CheckoutPage() {
   });
 
   const subtotal = getSubtotal();
-  const deliveryFee = 15000;
+  const deliveryFee = calculateDeliveryFee(distance, subtotal);
+  const discountKm = getDiscountKm(subtotal);
   const total = subtotal + deliveryFee;
 
   // Redirect if cart is empty
@@ -66,11 +125,20 @@ export default function CheckoutPage() {
     setIsGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const { latitude, longitude } = position.coords;
         setFormData((prev) => ({
           ...prev,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude,
+          longitude,
         }));
+        // Tính khoảng cách từ quán đến khách
+        const dist = calculateDistance(
+          SHOP_LOCATION.latitude,
+          SHOP_LOCATION.longitude,
+          latitude,
+          longitude
+        );
+        setDistance(dist);
         setIsGettingLocation(false);
       },
       () => {
@@ -95,6 +163,10 @@ export default function CheckoutPage() {
 
     if (!formData.address.trim()) {
       newErrors.address = 'Vui lòng nhập địa chỉ giao hàng';
+    }
+
+    if (distance === null) {
+      newErrors.address = 'Vui lòng bấm nút định vị để tính phí giao hàng';
     }
 
     setErrors(newErrors);
@@ -254,9 +326,9 @@ export default function CheckoutPage() {
                     {errors.address && (
                       <p className="text-sm text-red-500">{errors.address}</p>
                     )}
-                    {formData.latitude && formData.longitude && (
+                    {distance !== null && (
                       <p className="text-sm text-green-600">
-                        Đã lấy vị trí GPS
+                        ✓ Đã lấy vị trí - Khoảng cách: {distance.toFixed(1)} km
                       </p>
                     )}
                   </div>
@@ -325,8 +397,21 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Phí giao hàng</span>
-                    <span>{formatPriceShort(deliveryFee)}</span>
+                    {distance !== null ? (
+                      <span>{formatPriceShort(deliveryFee)}</span>
+                    ) : (
+                      <span className="text-amber-600 text-xs">Bấm định vị để tính</span>
+                    )}
                   </div>
+                  {distance !== null && (
+                    <div className="text-xs text-gray-500 space-y-1">
+                      <p>• Khoảng cách: {distance.toFixed(1)} km</p>
+                      <p>• Giá ship: 5.000đ/km</p>
+                      {discountKm > 0 && (
+                        <p className="text-green-600">• Giảm {discountKm} km (đơn từ {formatPriceShort(discountKm * 100000)})</p>
+                      )}
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Tổng cộng</span>
