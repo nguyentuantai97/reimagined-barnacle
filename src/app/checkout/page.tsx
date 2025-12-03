@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Search, Truck, Store, Clock, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,9 +11,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPriceShort, isValidVietnamesePhone } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 // Giá ship: 5.000đ/km
 const DELIVERY_PRICE_PER_KM = 5000;
+
+// Địa chỉ cửa hàng
+const SHOP_ADDRESS = 'Đường Hoàng Phan Thái, Bình Chánh, TP.HCM';
+const SHOP_GOOGLE_MAPS = 'https://maps.google.com/?q=10.6667,106.5649';
+
+type OrderType = 'delivery' | 'pickup';
 
 /**
  * Tính khoảng cách đường đi thực tế bằng API route
@@ -48,10 +55,6 @@ async function calculateDistance(params: {
 
 /**
  * Tính số km được giảm dựa theo giá trị đơn hàng
- * - 100k-199k: giảm 1km
- * - 200k-299k: giảm 2km
- * - 300k-399k: giảm 3km
- * - ...
  */
 function getDiscountKm(subtotal: number): number {
   if (subtotal < 100000) return 0;
@@ -60,7 +63,6 @@ function getDiscountKm(subtotal: number): number {
 
 /**
  * Làm tròn km lên 0.5 để tính tiền
- * VD: 2.1-2.49 → 2.5km, 2.51-2.99 → 3km
  */
 function roundKmForBilling(km: number): number {
   return Math.ceil(km * 2) / 2;
@@ -68,11 +70,9 @@ function roundKmForBilling(km: number): number {
 
 /**
  * Tính phí giao hàng
- * @param distance Khoảng cách (km)
- * @param subtotal Giá trị đơn hàng (chưa tính ship)
  */
 function calculateDeliveryFee(distance: number | null, subtotal: number): number {
-  if (distance === null) return 0; // Chưa có vị trí
+  if (distance === null) return 0;
 
   const discountKm = getDiscountKm(subtotal);
   const roundedKm = roundKmForBilling(distance);
@@ -84,6 +84,7 @@ function calculateDeliveryFee(distance: number | null, subtotal: number): number
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getSubtotal, clearCart } = useCartStore();
+  const [orderType, setOrderType] = useState<OrderType>('delivery');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isCalculatingFromAddress, setIsCalculatingFromAddress] = useState(false);
@@ -101,7 +102,7 @@ export default function CheckoutPage() {
   });
 
   const subtotal = getSubtotal();
-  const deliveryFee = calculateDeliveryFee(distance, subtotal);
+  const deliveryFee = orderType === 'delivery' ? calculateDeliveryFee(distance, subtotal) : 0;
   const discountKm = getDiscountKm(subtotal);
   const total = subtotal + deliveryFee;
 
@@ -124,13 +125,11 @@ export default function CheckoutPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user types
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
-  // Lấy vị trí từ GPS
   const getLocationFromGPS = () => {
     if (!navigator.geolocation) {
       alert('Trình duyệt không hỗ trợ định vị');
@@ -162,7 +161,6 @@ export default function CheckoutPage() {
     );
   };
 
-  // Tính khoảng cách từ địa chỉ text (geocoding)
   const calculateFromAddress = async () => {
     if (!formData.address.trim()) {
       setErrors((prev) => ({ ...prev, address: 'Vui lòng nhập địa chỉ' }));
@@ -203,12 +201,14 @@ export default function CheckoutPage() {
       newErrors.phone = 'Số điện thoại không hợp lệ';
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = 'Vui lòng nhập địa chỉ giao hàng';
-    }
+    if (orderType === 'delivery') {
+      if (!formData.address.trim()) {
+        newErrors.address = 'Vui lòng nhập địa chỉ giao hàng';
+      }
 
-    if (distance === null) {
-      newErrors.address = 'Vui lòng bấm nút định vị để tính phí giao hàng';
+      if (distance === null) {
+        newErrors.address = 'Vui lòng bấm nút định vị để tính phí giao hàng';
+      }
     }
 
     setErrors(newErrors);
@@ -223,14 +223,14 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      // Prepare order data
       const orderData = {
+        orderType,
         customer: {
           name: formData.name,
           phone: formData.phone,
-          address: formData.address,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
+          address: orderType === 'delivery' ? formData.address : SHOP_ADDRESS,
+          latitude: orderType === 'delivery' ? formData.latitude : null,
+          longitude: orderType === 'delivery' ? formData.longitude : null,
           note: formData.note,
         },
         items: items.map((item) => ({
@@ -252,7 +252,6 @@ export default function CheckoutPage() {
         total,
       };
 
-      // Call API to create order
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -262,9 +261,8 @@ export default function CheckoutPage() {
       const result = await response.json();
 
       if (result.success) {
-        // Clear cart and redirect to success page
         clearCart();
-        router.push(`/order-success?orderNo=${result.data.orderNo}`);
+        router.push(`/order-success?orderNo=${result.data.orderNo}&type=${orderType}`);
       } else {
         alert(result.error || 'Có lỗi xảy ra. Vui lòng thử lại.');
       }
@@ -287,16 +285,48 @@ export default function CheckoutPage() {
           Tiếp tục mua sắm
         </Link>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
           Thanh toán
         </h1>
+
+        {/* Order Type Tabs */}
+        <div className="bg-white rounded-xl p-1.5 mb-6 inline-flex shadow-sm border border-gray-200">
+          <button
+            type="button"
+            onClick={() => setOrderType('delivery')}
+            className={cn(
+              'flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200',
+              orderType === 'delivery'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            )}
+          >
+            <Truck className="h-5 w-5" />
+            <span>Giao hàng</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOrderType('pickup')}
+            className={cn(
+              'flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200',
+              orderType === 'pickup'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            )}
+          >
+            <Store className="h-5 w-5" />
+            <span>Đến lấy</span>
+          </button>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Customer Form */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>Thông tin giao hàng</CardTitle>
+                <CardTitle>
+                  {orderType === 'delivery' ? 'Thông tin giao hàng' : 'Thông tin nhận hàng'}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -337,61 +367,94 @@ export default function CheckoutPage() {
                     )}
                   </div>
 
-                  {/* Address */}
-                  <div className="space-y-2">
-                    <Label htmlFor="address">
-                      Địa chỉ giao hàng <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        placeholder="Nhập địa chỉ giao hàng"
-                        className={`flex-1 ${errors.address ? 'border-red-500' : ''}`}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={getLocationFromGPS}
-                        disabled={isGettingLocation}
-                        className="shrink-0"
-                        title="Lấy vị trí GPS"
-                      >
-                        {isGettingLocation ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <MapPin className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={calculateFromAddress}
-                        disabled={isCalculatingFromAddress || !formData.address.trim()}
-                        className="shrink-0"
-                        title="Tính phí ship từ địa chỉ"
-                      >
-                        {isCalculatingFromAddress ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Search className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Bấm <MapPin className="h-3 w-3 inline" /> để dùng GPS hoặc <Search className="h-3 w-3 inline" /> để tính từ địa chỉ
-                    </p>
-                    {errors.address && (
-                      <p className="text-sm text-red-500">{errors.address}</p>
-                    )}
-                    {distance !== null && (
-                      <p className="text-sm text-green-600">
-                        ✓ {distanceSource === 'gps' ? 'GPS' : 'Địa chỉ'} - Khoảng cách: {distance.toFixed(1)} km
+                  {/* Address - Only for delivery */}
+                  {orderType === 'delivery' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="address">
+                        Địa chỉ giao hàng <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="address"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          placeholder="Nhập địa chỉ giao hàng"
+                          className={`flex-1 ${errors.address ? 'border-red-500' : ''}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={getLocationFromGPS}
+                          disabled={isGettingLocation}
+                          className="shrink-0"
+                          title="Lấy vị trí GPS"
+                        >
+                          {isGettingLocation ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MapPin className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={calculateFromAddress}
+                          disabled={isCalculatingFromAddress || !formData.address.trim()}
+                          className="shrink-0"
+                          title="Tính phí ship từ địa chỉ"
+                        >
+                          {isCalculatingFromAddress ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Bấm <MapPin className="h-3 w-3 inline" /> để dùng GPS hoặc <Search className="h-3 w-3 inline" /> để tính từ địa chỉ
                       </p>
-                    )}
-                  </div>
+                      {errors.address && (
+                        <p className="text-sm text-red-500">{errors.address}</p>
+                      )}
+                      {distance !== null && (
+                        <p className="text-sm text-green-600">
+                          ✓ {distanceSource === 'gps' ? 'GPS' : 'Địa chỉ'} - Khoảng cách: {distance.toFixed(1)} km
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    /* Pickup Location Info */
+                    <div className="bg-amber-50 rounded-xl p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                          <Store className="h-5 w-5 text-amber-700" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">AN Milk Tea & Tea</h4>
+                          <p className="text-sm text-gray-600 mt-1">{SHOP_ADDRESS}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1.5 text-gray-600">
+                          <Clock className="h-4 w-4" />
+                          <span>8:00 - 22:00</span>
+                        </div>
+                        <a
+                          href={SHOP_GOOGLE_MAPS}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-amber-700 hover:text-amber-800 font-medium"
+                        >
+                          <Navigation className="h-4 w-4" />
+                          <span>Chỉ đường</span>
+                        </a>
+                      </div>
+                      <p className="text-sm text-amber-700 bg-amber-100 rounded-lg px-3 py-2">
+                        Vui lòng đến quán trong vòng 30 phút sau khi đặt hàng để nhận đồ uống
+                      </p>
+                    </div>
+                  )}
 
                   {/* Note */}
                   <div className="space-y-2">
@@ -401,7 +464,10 @@ export default function CheckoutPage() {
                       name="note"
                       value={formData.note}
                       onChange={handleChange}
-                      placeholder="Ghi chú cho đơn hàng (VD: Giao trước 12h, gọi trước khi giao...)"
+                      placeholder={orderType === 'delivery'
+                        ? 'Ghi chú cho đơn hàng (VD: Giao trước 12h, gọi trước khi giao...)'
+                        : 'Ghi chú cho đơn hàng (VD: Thời gian đến lấy...)'
+                      }
                       rows={3}
                       className="w-full px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
@@ -457,13 +523,15 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Phí giao hàng</span>
-                    {distance !== null ? (
+                    {orderType === 'pickup' ? (
+                      <span className="text-green-600 font-medium">Miễn phí</span>
+                    ) : distance !== null ? (
                       <span>{formatPriceShort(deliveryFee)}</span>
                     ) : (
                       <span className="text-amber-600 text-xs">Bấm định vị để tính</span>
                     )}
                   </div>
-                  {distance !== null && (
+                  {orderType === 'delivery' && distance !== null && (
                     <div className="text-xs text-gray-500 space-y-1">
                       <p>• Khoảng cách: {distance.toFixed(1)} km → tính {roundKmForBilling(distance)} km</p>
                       <p>• Giá ship: 5.000đ/km</p>
@@ -481,9 +549,14 @@ export default function CheckoutPage() {
 
                 {/* Payment Method Note */}
                 <div className="bg-amber-50 p-3 rounded-lg text-sm">
-                  <p className="font-medium text-amber-800 mb-1">Thanh toán khi nhận hàng (COD)</p>
+                  <p className="font-medium text-amber-800 mb-1">
+                    {orderType === 'delivery' ? 'Thanh toán khi nhận hàng (COD)' : 'Thanh toán tại quán'}
+                  </p>
                   <p className="text-amber-600">
-                    Quý khách vui lòng thanh toán khi nhận hàng
+                    {orderType === 'delivery'
+                      ? 'Quý khách vui lòng thanh toán khi nhận hàng'
+                      : 'Quý khách thanh toán khi đến lấy đồ uống'
+                    }
                   </p>
                 </div>
               </CardContent>

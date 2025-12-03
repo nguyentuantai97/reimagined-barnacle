@@ -93,10 +93,14 @@ async function getDefaultBranchId(): Promise<string> {
   return activeBranch.Id;
 }
 
+type OrderType = 'delivery' | 'pickup';
+
 /**
  * Create an online order in CUKCUK POS system
  * Uses POST /api/v1/order-onlines/create endpoint
  * This will sync to CUKCUK PC and trigger automatic bill/label printing
+ *
+ * @param orderType 'delivery' = giao hàng, 'pickup' = đến lấy tại quán
  */
 export async function createCukcukOrder(
   orderNo: string,
@@ -104,7 +108,8 @@ export async function createCukcukOrder(
   items: OrderItem[],
   subtotal: number,
   deliveryFee: number,
-  total: number
+  total: number,
+  orderType: OrderType = 'delivery'
 ): Promise<{ success: boolean; orderCode?: string; error?: string }> {
   try {
     const { accessToken, companyCode } = await getCukcukToken();
@@ -137,19 +142,34 @@ export async function createCukcukOrder(
       };
     });
 
-    // Build shipping address with GPS if available
-    let shippingAddress = customer.address;
-    if (customer.latitude && customer.longitude) {
-      shippingAddress += ` (GPS: ${customer.latitude}, ${customer.longitude})`;
+    // Determine CUKCUK OrderType: 0 = delivery, 1 = takeaway (pickup)
+    const cukcukOrderType = orderType === 'pickup' ? 1 : 0;
+    const isDelivery = orderType === 'delivery';
+
+    // Build shipping address with Google Maps link for shipper navigation
+    let shippingAddress = '';
+    if (isDelivery && customer.address) {
+      shippingAddress = customer.address;
+      if (customer.latitude && customer.longitude) {
+        const mapsLink = `https://maps.google.com/?q=${customer.latitude},${customer.longitude}`;
+        shippingAddress += ` | Maps: ${mapsLink}`;
+      }
+    } else {
+      shippingAddress = 'Đến lấy tại quán';
     }
 
-    // Build order note
-    const orderNote = customer.note || '';
+    // Build order note - include pickup info if applicable
+    let orderNote = customer.note || '';
+    if (!isDelivery) {
+      orderNote = orderNote
+        ? `[ĐẾN LẤY] ${orderNote}`
+        : '[ĐẾN LẤY TẠI QUÁN]';
+    }
 
     // Create online order request
     const orderRequest: CukcukOrderOnlineRequest = {
       BranchId: branchId,
-      OrderType: 0, // 0 = delivery
+      OrderType: cukcukOrderType, // 0 = delivery, 1 = takeaway
       OrderCode: orderNo,
       CustomerName: customer.name,
       CustomerTel: customer.phone,

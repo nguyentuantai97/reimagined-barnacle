@@ -3,7 +3,10 @@ import { createCukcukOrder, isCukcukConfigured } from '@/lib/cukcuk/client';
 import { generateOrderNo } from '@/lib/format';
 import { CustomerInfo, OrderItem } from '@/types';
 
+type OrderType = 'delivery' | 'pickup';
+
 interface CreateOrderRequest {
+  orderType: OrderType;
   customer: CustomerInfo;
   items: OrderItem[];
   subtotal: number;
@@ -15,10 +18,21 @@ export async function POST(request: Request) {
   try {
     const body: CreateOrderRequest = await request.json();
 
-    // Validate required fields
-    if (!body.customer?.name || !body.customer?.phone || !body.customer?.address) {
+    // Validate order type
+    const orderType = body.orderType || 'delivery';
+    const isDelivery = orderType === 'delivery';
+
+    // Validate required fields (address only required for delivery)
+    if (!body.customer?.name || !body.customer?.phone) {
       return NextResponse.json(
         { success: false, error: 'Thiếu thông tin khách hàng' },
+        { status: 400 }
+      );
+    }
+
+    if (isDelivery && !body.customer?.address) {
+      return NextResponse.json(
+        { success: false, error: 'Vui lòng nhập địa chỉ giao hàng' },
         { status: 400 }
       );
     }
@@ -42,7 +56,8 @@ export async function POST(request: Request) {
         body.items,
         body.subtotal,
         body.deliveryFee,
-        body.total
+        body.total,
+        orderType
       );
 
       if (!cukcukResult.success) {
@@ -61,8 +76,10 @@ export async function POST(request: Request) {
     // Log order for debugging (in production, save to DB)
     console.log('Order created:', {
       orderNo,
+      orderType,
       customer: body.customer.name,
       phone: body.customer.phone,
+      address: isDelivery ? body.customer.address : 'Đến lấy tại quán',
       items: body.items.length,
       total: body.total,
     });

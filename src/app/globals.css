@@ -154,3 +154,13 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--chart-3);
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

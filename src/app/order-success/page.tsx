@@ -7,9 +7,14 @@ import { CheckCircle, Phone, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
+const SHOP_ADDRESS = 'Đường Hoàng Phan Thái, Bình Chánh, TP.HCM';
+const SHOP_GOOGLE_MAPS = 'https://maps.google.com/?q=10.6667,106.5649';
+
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderNo = searchParams.get('orderNo') || 'N/A';
+  const orderType = searchParams.get('type') || 'delivery';
+  const isPickup = orderType === 'pickup';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center p-4">
@@ -36,37 +41,72 @@ function OrderSuccessContent() {
             <p className="text-2xl font-bold text-amber-800">{orderNo}</p>
           </div>
 
-          {/* Info */}
-          <div className="text-left space-y-4 mb-8">
-            <div className="flex items-start gap-3 text-sm">
-              <span className="text-amber-600 mt-0.5">1.</span>
-              <p className="text-gray-600">
-                Đơn hàng của bạn đang được xử lý và sẽ sớm được giao đến.
-              </p>
+          {/* Info - Different for delivery vs pickup */}
+          {isPickup ? (
+            <div className="text-left space-y-4 mb-8">
+              <div className="flex items-start gap-3 text-sm">
+                <span className="text-amber-600 mt-0.5">1.</span>
+                <p className="text-gray-600">
+                  Đơn hàng của bạn đang được pha chế và sẽ sẵn sàng trong <strong>10-15 phút</strong>.
+                </p>
+              </div>
+              <div className="flex items-start gap-3 text-sm">
+                <span className="text-amber-600 mt-0.5">2.</span>
+                <p className="text-gray-600">
+                  Vui lòng đến lấy đơn hàng tại: <strong>{SHOP_ADDRESS}</strong>
+                </p>
+              </div>
+              <div className="flex items-start gap-3 text-sm">
+                <span className="text-amber-600 mt-0.5">3.</span>
+                <p className="text-gray-600">
+                  Thanh toán khi nhận hàng. Đến trong vòng <strong>30 phút</strong> sau khi đặt hàng.
+                </p>
+              </div>
+              {/* Google Maps link */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <a
+                  href={SHOP_GOOGLE_MAPS}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-amber-700 font-medium hover:text-amber-800 text-sm"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Xem chỉ đường trên Google Maps
+                </a>
+              </div>
             </div>
-            <div className="flex items-start gap-3 text-sm">
-              <span className="text-amber-600 mt-0.5">2.</span>
-              <p className="text-gray-600">
-                Thời gian giao hàng dự kiến: <strong>15-30 phút</strong>
-              </p>
+          ) : (
+            <div className="text-left space-y-4 mb-8">
+              <div className="flex items-start gap-3 text-sm">
+                <span className="text-amber-600 mt-0.5">1.</span>
+                <p className="text-gray-600">
+                  Đơn hàng của bạn đang được xử lý và sẽ sớm được giao đến.
+                </p>
+              </div>
+              <div className="flex items-start gap-3 text-sm">
+                <span className="text-amber-600 mt-0.5">2.</span>
+                <p className="text-gray-600">
+                  Thời gian giao hàng dự kiến: <strong>15-30 phút</strong>
+                </p>
+              </div>
+              <div className="flex items-start gap-3 text-sm">
+                <span className="text-amber-600 mt-0.5">3.</span>
+                <p className="text-gray-600">
+                  Vui lòng thanh toán khi nhận hàng (COD).
+                </p>
+              </div>
             </div>
-            <div className="flex items-start gap-3 text-sm">
-              <span className="text-amber-600 mt-0.5">3.</span>
-              <p className="text-gray-600">
-                Vui lòng thanh toán khi nhận hàng (COD).
-              </p>
-            </div>
-          </div>
+          )}
 
           {/* Contact */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-sm text-gray-500 mb-2">Cần hỗ trợ? Gọi ngay:</p>
             <a
-              href="tel:0909123456"
+              href="tel:0976257223"
               className="inline-flex items-center gap-2 text-amber-700 font-semibold hover:text-amber-800"
             >
               <Phone className="h-4 w-4" />
-              0909 123 456
+              0976 257 223
             </a>
           </div>
 
