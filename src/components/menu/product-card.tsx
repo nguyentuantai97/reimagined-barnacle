@@ -1,11 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { Plus } from 'lucide-react';
+import { Plus, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/types';
 import { formatPriceShort } from '@/lib/format';
+import { getProductImage } from '@/lib/data/product-images';
 
 interface ProductCardProps {
   product: Product;
@@ -13,19 +14,30 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+  // Get image from mapping or product data
+  const imageUrl = product.image || getProductImage(product.id, product.category);
+  const hasImage = Boolean(imageUrl);
+
   return (
     <Card className="group overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow bg-card">
       <div className="relative aspect-square overflow-hidden bg-secondary">
-        {product.image ? (
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          />
+        {hasImage ? (
+          <>
+            <Image
+              src={imageUrl}
+              alt={product.name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
+            {/* Badge "Ảnh minh họa" */}
+            <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/60 text-white text-[10px] rounded-full backdrop-blur-sm">
+              <ImageIcon className="h-2.5 w-2.5" />
+              <span>Minh họa</span>
+            </div>
+          </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-accent">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100">
             <span className="text-4xl">🧋</span>
           </div>
         )}
