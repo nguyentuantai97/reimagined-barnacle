@@ -150,12 +150,12 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="relative h-10 w-10 rounded-full hover:bg-amber-50"
+              className="relative h-11 w-11 rounded-full hover:bg-amber-50"
               onClick={openCart}
             >
-              <ShoppingBag className="h-5 w-5 text-gray-700" />
+              <ShoppingBag className="h-6 w-6 text-gray-700" />
               {itemCount > 0 && (
-                <Badge className="absolute -top-0.5 -right-0.5 h-5 min-w-5 rounded-full px-1.5 flex items-center justify-center bg-amber-600 text-white text-xs font-semibold border-2 border-white">
+                <Badge className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full px-1.5 flex items-center justify-center bg-amber-600 text-white text-xs font-semibold border-2 border-white">
                   {itemCount}
                 </Badge>
               )}
