@@ -19,7 +19,7 @@ const DELIVERY_PRICE_PER_KM = 5000;
 
 // Địa chỉ cửa hàng
 const SHOP_ADDRESS = 'Đường Hoàng Phan Thái, Bình Chánh, TP.HCM';
-const SHOP_GOOGLE_MAPS = 'https://maps.google.com/?q=10.6667,106.5649';
+const SHOP_GOOGLE_MAPS = 'https://maps.google.com/?q=10.666694951717572,106.56490596564488';
 
 type OrderType = 'delivery' | 'pickup';
 
@@ -138,6 +138,14 @@ export default function CheckoutPage() {
     }
 
     setIsGettingLocation(true);
+
+    // Options cần thiết cho Safari và các trình duyệt khác
+    const geoOptions: PositionOptions = {
+      enableHighAccuracy: true, // Yêu cầu độ chính xác cao
+      timeout: 15000, // Timeout 15 giây (Safari cần timeout rõ ràng)
+      maximumAge: 0, // Không dùng cache, lấy vị trí mới
+    };
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
@@ -155,10 +163,24 @@ export default function CheckoutPage() {
         }
         setIsGettingLocation(false);
       },
-      () => {
-        alert('Không thể lấy vị trí GPS. Vui lòng dùng nút "Tính phí ship" từ địa chỉ.');
+      (error) => {
         setIsGettingLocation(false);
-      }
+        // Xử lý các loại lỗi cụ thể
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            alert('Bạn đã từ chối quyền truy cập vị trí.\n\nĐể bật lại:\n• Safari: Cài đặt → Quyền riêng tư → Dịch vụ định vị → Safari\n• Chrome: Cài đặt → Quyền riêng tư → Vị trí');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            alert('Không thể xác định vị trí. Vui lòng:\n• Bật GPS/Định vị trên thiết bị\n• Thử lại hoặc dùng nút "Tính phí ship" từ địa chỉ');
+            break;
+          case error.TIMEOUT:
+            alert('Hết thời gian chờ định vị. Vui lòng:\n• Kiểm tra kết nối mạng\n• Ra ngoài trời để có GPS tốt hơn\n• Hoặc dùng nút "Tính phí ship" từ địa chỉ');
+            break;
+          default:
+            alert('Không thể lấy vị trí GPS. Vui lòng dùng nút "Tính phí ship" từ địa chỉ.');
+        }
+      },
+      geoOptions
     );
   };
 
