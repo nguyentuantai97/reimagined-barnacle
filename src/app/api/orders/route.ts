@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createCukcukOrder, isCukcukConfigured } from '@/lib/cukcuk/client';
-import { generateOrderNo } from '@/lib/format';
+import { generateOrderNo, isValidVietnamesePhone } from '@/lib/format';
 import { CustomerInfo, OrderItem } from '@/types';
 
 type OrderType = 'delivery' | 'pickup';
@@ -14,32 +14,79 @@ interface CreateOrderRequest {
   total: number;
 }
 
+// Sanitize string input to prevent XSS
+function sanitizeString(input: string, maxLength: number = 500): string {
+  if (typeof input !== 'string') return '';
+  return input
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[<>]/g, ''); // Remove potential HTML tags
+}
+
+// Validate number is positive and reasonable
+function isValidAmount(amount: unknown): amount is number {
+  return typeof amount === 'number' && amount >= 0 && amount <= 100000000; // Max 100M VND
+}
+
 export async function POST(request: Request) {
   try {
     const body: CreateOrderRequest = await request.json();
 
     // Validate order type
-    const orderType = body.orderType || 'delivery';
+    const orderType = body.orderType === 'pickup' ? 'pickup' : 'delivery';
     const isDelivery = orderType === 'delivery';
 
-    // Validate required fields (address only required for delivery)
-    if (!body.customer?.name || !body.customer?.phone) {
+    // Sanitize customer data
+    const customer: CustomerInfo = {
+      name: sanitizeString(body.customer?.name || '', 100),
+      phone: sanitizeString(body.customer?.phone || '', 15),
+      address: sanitizeString(body.customer?.address || '', 500),
+      note: sanitizeString(body.customer?.note || '', 500),
+      latitude: typeof body.customer?.latitude === 'number' ? body.customer.latitude : undefined,
+      longitude: typeof body.customer?.longitude === 'number' ? body.customer.longitude : undefined,
+    };
+
+    // Validate required fields
+    if (!customer.name || customer.name.length < 2) {
       return NextResponse.json(
-        { success: false, error: 'Thiếu thông tin khách hàng' },
+        { success: false, error: 'Vui lòng nhập họ tên (ít nhất 2 ký tự)' },
         { status: 400 }
       );
     }
 
-    if (isDelivery && !body.customer?.address) {
+    if (!customer.phone || !isValidVietnamesePhone(customer.phone)) {
       return NextResponse.json(
-        { success: false, error: 'Vui lòng nhập địa chỉ giao hàng' },
+        { success: false, error: 'Số điện thoại không hợp lệ' },
         { status: 400 }
       );
     }
 
-    if (!body.items || body.items.length === 0) {
+    if (isDelivery && (!customer.address || customer.address.length < 10)) {
+      return NextResponse.json(
+        { success: false, error: 'Vui lòng nhập địa chỉ giao hàng đầy đủ' },
+        { status: 400 }
+      );
+    }
+
+    // Validate items
+    if (!Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Giỏ hàng trống' },
+        { status: 400 }
+      );
+    }
+
+    if (body.items.length > 50) {
+      return NextResponse.json(
+        { success: false, error: 'Đơn hàng không được quá 50 sản phẩm' },
+        { status: 400 }
+      );
+    }
+
+    // Validate amounts
+    if (!isValidAmount(body.subtotal) || !isValidAmount(body.deliveryFee) || !isValidAmount(body.total)) {
+      return NextResponse.json(
+        { success: false, error: 'Số tiền không hợp lệ' },
         { status: 400 }
       );
     }
@@ -52,7 +99,7 @@ export async function POST(request: Request) {
     if (isCukcukConfigured()) {
       const cukcukResult = await createCukcukOrder(
         orderNo,
-        body.customer,
+        customer, // Use sanitized customer data
         body.items,
         body.subtotal,
         body.deliveryFee,
@@ -78,7 +125,7 @@ export async function POST(request: Request) {
       console.log('Order created:', {
         orderNo,
         orderType,
-        customer: body.customer.name,
+        customer: customer.name,
         items: body.items.length,
         total: body.total,
       });
