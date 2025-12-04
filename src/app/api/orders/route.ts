@@ -73,16 +73,16 @@ export async function POST(request: Request) {
     // TODO: Save order to local database for backup
     // This would be implemented with Drizzle ORM
 
-    // Log order for debugging (in production, save to DB)
-    console.log('Order created:', {
-      orderNo,
-      orderType,
-      customer: body.customer.name,
-      phone: body.customer.phone,
-      address: isDelivery ? body.customer.address : 'Đến lấy tại quán',
-      items: body.items.length,
-      total: body.total,
-    });
+    // Log order only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Order created:', {
+        orderNo,
+        orderType,
+        customer: body.customer.name,
+        items: body.items.length,
+        total: body.total,
+      });
+    }
 
     return NextResponse.json({
       success: true,

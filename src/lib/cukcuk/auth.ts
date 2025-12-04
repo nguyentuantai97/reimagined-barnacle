@@ -60,8 +60,6 @@ export async function getCukcukToken(): Promise<{
     SignatureInfo: signature,
   };
 
-  console.log('CUKCUK Login Request:', JSON.stringify(loginRequest, null, 2));
-
   const response = await fetch(`${CUKCUK_BASE_URL}/api/Account/Login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -69,7 +67,6 @@ export async function getCukcukToken(): Promise<{
   });
 
   const data: CukcukLoginResponse = await response.json();
-  console.log('CUKCUK Login Response:', JSON.stringify(data, null, 2));
 
   if (!response.ok) {
     throw new Error(`CUKCUK login failed: ${response.status} - ${data.Message || 'Unknown error'}`);

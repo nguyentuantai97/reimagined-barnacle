@@ -46,7 +46,6 @@ export async function fetchCukcukBranches(): Promise<{
     }
 
     const data: CukcukBranchListResponse = await response.json();
-    console.log('CUKCUK Branches Response:', JSON.stringify(data, null, 2));
 
     if (!data.Success) {
       throw new Error(data.Message || `CUKCUK error type: ${data.ErrorType}`);
@@ -187,7 +186,10 @@ export async function createCukcukOrder(
       OrderItems: orderItems,
     };
 
-    console.log('CUKCUK Order Request:', JSON.stringify(orderRequest, null, 2));
+    // Order request logged only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('CUKCUK Order Request:', JSON.stringify(orderRequest, null, 2));
+    }
 
     const baseUrl = getCukcukBaseUrl();
 
@@ -202,7 +204,9 @@ export async function createCukcukOrder(
     });
 
     const responseText = await response.text();
-    console.log('CUKCUK Order Response:', responseText);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('CUKCUK Order Response:', responseText);
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -280,7 +284,6 @@ export async function fetchCukcukInventoryItems(): Promise<{
     }
 
     const data: CukcukInventoryListResponse = await response.json();
-    console.log('CUKCUK Inventory Response:', JSON.stringify(data, null, 2));
 
     if (!data.Success) {
       throw new Error(data.Message || `CUKCUK error type: ${data.ErrorType}`);
@@ -332,7 +335,6 @@ export async function fetchCukcukCategories(): Promise<{
     }
 
     const data: CukcukCategoryListResponse = await response.json();
-    console.log('CUKCUK Categories Response:', JSON.stringify(data, null, 2));
 
     if (!data.Success) {
       throw new Error(data.Message || `CUKCUK error type: ${data.ErrorType}`);
