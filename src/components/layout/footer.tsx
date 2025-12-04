@@ -30,9 +30,14 @@ export function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-[#D4915C] mt-0.5 shrink-0" />
-                <span className="text-sm">
+                <a
+                  href="https://maps.google.com/?q=10.6667,106.5649"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm hover:text-white hover:underline transition-colors"
+                >
                   112 Đường Hoàng Phan Thái, Ấp 2, Xã Bình Chánh, Huyện Bình Chánh, TP.HCM
-                </span>
+                </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-[#D4915C] shrink-0" />
