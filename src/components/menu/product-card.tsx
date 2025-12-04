@@ -37,25 +37,21 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           </div>
         )}
       </div>
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-card-foreground mb-1 line-clamp-2 min-h-[2.5rem]">
+      <CardContent className="p-3 sm:p-4">
+        <h3 className="font-semibold text-card-foreground mb-1 line-clamp-2 text-sm sm:text-base min-h-[2.5rem]">
           {product.name}
         </h3>
-        <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-[2.5rem]">
-          {product.description}
-        </p>
-        <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-primary">
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <span className="text-base sm:text-lg font-bold text-primary">
             {formatPriceShort(product.price)}
           </span>
           <Button
-            size="sm"
+            size="icon"
             onClick={() => onAddToCart(product)}
             disabled={!product.isAvailable}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 w-8 sm:h-9 sm:w-9 rounded-full shrink-0"
           >
             <Plus className="h-4 w-4" />
-            Thêm
           </Button>
         </div>
       </CardContent>
