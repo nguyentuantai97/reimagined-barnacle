@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchCukcukMenu, isCukcukConfigured } from '@/lib/cukcuk/client';
 import { CukcukInventoryItem, CukcukInventoryCategory } from '@/lib/cukcuk/types';
 import { Product, Category, ProductOption } from '@/types';
-import { sugarOptions, iceOptions, sizeOptions, toppingOptions } from '@/lib/data/menu';
+import { sugarOptions, iceOptions, toppingOptions } from '@/lib/data/menu';
 
 // Helper to create slug from Vietnamese text
 function createSlug(text: string): string {
@@ -15,25 +15,25 @@ function createSlug(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-// Map CUKCUK category to default options
+// Map CUKCUK category to default options (không có size vì cửa hàng chỉ bán 1 size)
 function getDefaultOptionsForCategory(categoryName: string): ProductOption[] {
   const name = categoryName.toLowerCase();
 
   if (name.includes('trà sữa') || name.includes('milk tea')) {
-    return [sizeOptions, sugarOptions, iceOptions, toppingOptions];
+    return [sugarOptions, iceOptions, toppingOptions];
   }
   if (name.includes('trà') || name.includes('tea')) {
-    return [sizeOptions, sugarOptions, iceOptions];
+    return [sugarOptions, iceOptions];
   }
   if (name.includes('cà phê') || name.includes('coffee')) {
-    return [sizeOptions, iceOptions];
+    return [sugarOptions, iceOptions];
   }
   if (name.includes('nước ép') || name.includes('sinh tố') || name.includes('juice')) {
-    return [sizeOptions, sugarOptions];
+    return [sugarOptions, iceOptions];
   }
 
-  // Default options
-  return [sizeOptions, sugarOptions, iceOptions];
+  // Default options - ngọt và đá
+  return [sugarOptions, iceOptions];
 }
 
 // Transform CUKCUK inventory item to Product

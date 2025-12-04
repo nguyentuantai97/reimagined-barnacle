@@ -9,28 +9,27 @@ export const categories: Category[] = [
   { id: 'topping', name: 'Topping', slug: 'topping' },
 ];
 
-// Sugar level options
+// Sugar level options - 4 mức: 30%, 50%, 70%, 100%
 export const sugarOptions = {
   id: 'sugar',
-  name: 'Độ ngọt',
+  name: 'Ngọt',
   choices: [
-    { id: 'sugar-0', name: '0% đường', priceAdjustment: 0 },
-    { id: 'sugar-30', name: '30% đường', priceAdjustment: 0 },
-    { id: 'sugar-50', name: '50% đường', priceAdjustment: 0 },
-    { id: 'sugar-70', name: '70% đường', priceAdjustment: 0 },
-    { id: 'sugar-100', name: '100% đường', priceAdjustment: 0 },
+    { id: 'sugar-30', name: '30%', priceAdjustment: 0 },
+    { id: 'sugar-50', name: '50%', priceAdjustment: 0 },
+    { id: 'sugar-70', name: '70%', priceAdjustment: 0 },
+    { id: 'sugar-100', name: '100%', priceAdjustment: 0 },
   ],
 };
 
-// Ice level options
+// Ice level options - 4 mức: 30%, 50%, 70%, 100%
 export const iceOptions = {
   id: 'ice',
-  name: 'Độ đá',
+  name: 'Đá',
   choices: [
-    { id: 'ice-0', name: 'Không đá', priceAdjustment: 0 },
-    { id: 'ice-30', name: 'Ít đá', priceAdjustment: 0 },
-    { id: 'ice-50', name: 'Đá vừa', priceAdjustment: 0 },
-    { id: 'ice-100', name: 'Đá bình thường', priceAdjustment: 0 },
+    { id: 'ice-30', name: '30%', priceAdjustment: 0 },
+    { id: 'ice-50', name: '50%', priceAdjustment: 0 },
+    { id: 'ice-70', name: '70%', priceAdjustment: 0 },
+    { id: 'ice-100', name: '100%', priceAdjustment: 0 },
   ],
 };
 
@@ -48,15 +47,15 @@ export const toppingOptions = {
   ],
 };
 
-// Size options
-export const sizeOptions = {
-  id: 'size',
-  name: 'Size',
-  choices: [
-    { id: 'size-m', name: 'Size M', priceAdjustment: 0 },
-    { id: 'size-l', name: 'Size L', priceAdjustment: 6000 },
-  ],
-};
+// Size options - Đã bỏ vì cửa hàng chỉ bán 1 size
+// export const sizeOptions = {
+//   id: 'size',
+//   name: 'Size',
+//   choices: [
+//     { id: 'size-m', name: 'Size M', priceAdjustment: 0 },
+//     { id: 'size-l', name: 'Size L', priceAdjustment: 6000 },
+//   ],
+// };
 
 // Sample products (sẽ được thay thế bằng data từ CUKCUK)
 export const products: Product[] = [
@@ -70,7 +69,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-sua',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions, toppingOptions],
+    options: [sugarOptions, iceOptions, toppingOptions],
   },
   {
     id: 'ts-002',
@@ -81,7 +80,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-sua',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions, toppingOptions],
+    options: [sugarOptions, iceOptions, toppingOptions],
   },
   {
     id: 'ts-003',
@@ -92,7 +91,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-sua',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions, toppingOptions],
+    options: [sugarOptions, iceOptions, toppingOptions],
   },
   {
     id: 'ts-004',
@@ -103,7 +102,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-sua',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions, toppingOptions],
+    options: [sugarOptions, iceOptions, toppingOptions],
   },
   {
     id: 'ts-005',
@@ -114,7 +113,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-sua',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions, toppingOptions],
+    options: [sugarOptions, iceOptions, toppingOptions],
   },
   {
     id: 'ts-006',
@@ -125,7 +124,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-sua',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions, toppingOptions],
+    options: [sugarOptions, iceOptions, toppingOptions],
   },
 
   // Trà Trái Cây
@@ -138,7 +137,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-trai-cay',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions],
+    options: [sugarOptions, iceOptions],
   },
   {
     id: 'ttc-002',
@@ -149,7 +148,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-trai-cay',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions],
+    options: [sugarOptions, iceOptions],
   },
   {
     id: 'ttc-003',
@@ -160,7 +159,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-trai-cay',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions],
+    options: [sugarOptions, iceOptions],
   },
   {
     id: 'ttc-004',
@@ -171,7 +170,7 @@ export const products: Product[] = [
     image: '',
     category: 'tra-trai-cay',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions],
+    options: [sugarOptions, iceOptions],
   },
 
   // Cà Phê
@@ -184,7 +183,7 @@ export const products: Product[] = [
     image: '',
     category: 'ca-phe',
     isAvailable: true,
-    options: [sizeOptions, iceOptions],
+    options: [sugarOptions, iceOptions],
   },
   {
     id: 'cf-002',
@@ -195,7 +194,7 @@ export const products: Product[] = [
     image: '',
     category: 'ca-phe',
     isAvailable: true,
-    options: [sizeOptions, iceOptions],
+    options: [sugarOptions, iceOptions],
   },
   {
     id: 'cf-003',
@@ -206,7 +205,7 @@ export const products: Product[] = [
     image: '',
     category: 'ca-phe',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions, iceOptions],
+    options: [sugarOptions, iceOptions],
   },
 
   // Nước Ép
@@ -219,7 +218,7 @@ export const products: Product[] = [
     image: '',
     category: 'nuoc-ep',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions],
+    options: [sugarOptions, iceOptions],
   },
   {
     id: 'ne-002',
@@ -230,7 +229,7 @@ export const products: Product[] = [
     image: '',
     category: 'nuoc-ep',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions],
+    options: [sugarOptions, iceOptions],
   },
   {
     id: 'ne-003',
@@ -241,7 +240,7 @@ export const products: Product[] = [
     image: '',
     category: 'nuoc-ep',
     isAvailable: true,
-    options: [sizeOptions, sugarOptions],
+    options: [sugarOptions, iceOptions],
   },
 ];
 
