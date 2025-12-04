@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Tọa độ quán AN Milk Tea - Đường Hoàng Phan Thái, Bình Chánh
-// Plus Code: MH87+MXF (7P28MH87+MXF)
+// Tọa độ quán AN Milk Tea - 112 Đường Hoàng Phan Thái, Bình Chánh
 const SHOP_LOCATION = {
-  latitude: 10.6667,
-  longitude: 106.5649,
+  latitude: 10.666694951717572,
+  longitude: 106.56490596564488,
 };
 
 /**
@@ -64,10 +63,13 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
 
 /**
  * Tính khoảng cách đường đi bằng OSRM
+ * Chiều: từ quán (SHOP) đến khách hàng (customer) - đúng chiều ship
  */
-async function calculateOSRMDistance(lat: number, lon: number): Promise<number | null> {
+async function calculateOSRMDistance(customerLat: number, customerLon: number): Promise<number | null> {
   try {
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${SHOP_LOCATION.longitude},${SHOP_LOCATION.latitude};${lon},${lat}?overview=false`;
+    // OSRM format: /route/v1/driving/lon1,lat1;lon2,lat2
+    // Điểm đầu: Quán (SHOP_LOCATION) -> Điểm cuối: Khách hàng (customer)
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${SHOP_LOCATION.longitude},${SHOP_LOCATION.latitude};${customerLon},${customerLat}?overview=false`;
 
     const response = await fetch(osrmUrl);
     const data = await response.json();

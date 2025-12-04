@@ -31,7 +31,7 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-[#D4915C] mt-0.5 shrink-0" />
                 <a
-                  href="https://maps.google.com/?q=10.6667,106.5649"
+                  href="https://maps.google.com/?q=10.666694951717572,106.56490596564488"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm hover:text-white hover:underline transition-colors"
