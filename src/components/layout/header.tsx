@@ -26,9 +26,10 @@ const categoryIcons: Record<string, typeof Coffee> = {
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { getItemCount, openCart } = useCartStore();
+  const { getItemCount, openCart, _hasHydrated } = useCartStore();
   const { categories } = useMenu();
-  const itemCount = getItemCount();
+  // Only show item count after hydration to prevent mismatch error
+  const itemCount = _hasHydrated ? getItemCount() : 0;
   const pathname = usePathname();
 
   return (

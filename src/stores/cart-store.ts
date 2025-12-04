@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
+  _hasHydrated: boolean;
 
   // Actions
   addItem: (product: Product, quantity: number, options: CartItemOption[], note?: string) => void;
@@ -15,6 +16,7 @@ interface CartStore {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  setHasHydrated: (state: boolean) => void;
 
   // Computed
   getItemCount: () => number;
@@ -35,6 +37,11 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      _hasHydrated: false,
+
+      setHasHydrated: (state) => {
+        set({ _hasHydrated: state });
+      },
 
       addItem: (product, quantity, options, note) => {
         const totalPrice = calculateItemTotal(product.price, quantity, options);
@@ -119,6 +126,9 @@ export const useCartStore = create<CartStore>()(
     {
       name: 'tea-shop-an-cart',
       partialize: (state) => ({ items: state.items }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
