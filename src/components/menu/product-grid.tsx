@@ -12,7 +12,7 @@ interface ProductGridProps {
   onProductClick: (product: Product) => void;
 }
 
-const ITEMS_PER_PAGE = 8; // 2 rows x 4 columns on desktop, 2 rows x 2 columns on mobile
+const ITEMS_PER_PAGE = 12; // 3 rows x 4 columns on desktop, 6 rows x 2 columns on mobile
 
 export function ProductGrid({ products, onProductClick }: ProductGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
