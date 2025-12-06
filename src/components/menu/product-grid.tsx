@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface ProductGridProps {
   products: Product[];
-  onProductClick: (product: Product) => void;
+  onProductClick: (product: Product, cardElement?: HTMLElement) => void;
 }
 
 const ITEMS_PER_PAGE = 12; // 3 rows x 4 columns on desktop, 6 rows x 2 columns on mobile

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { Minus, Plus, ShoppingCart, ImageIcon } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -9,6 +9,7 @@ import { Product, CartItemOption } from '@/types';
 import { formatPriceShort } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { getProductImage } from '@/lib/data/product-images';
+import { FlyingCartIcon } from '@/components/animations/flying-cart-icon';
 
 interface ProductModalProps {
   product: Product | null;
@@ -16,6 +17,11 @@ interface ProductModalProps {
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number, options: CartItemOption[], note?: string) => void;
   toppingProducts?: Product[]; // Danh sách topping từ CUKCUK
+  initialQuantity?: number;
+  initialOptions?: CartItemOption[];
+  initialNote?: string;
+  isEditing?: boolean;
+  cardElement?: HTMLElement | null; // Product card element for animation
 }
 
 // Default options nếu sản phẩm không có
@@ -74,12 +80,25 @@ interface ToppingSelection {
   quantity: number;
 }
 
-export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingProducts = [] }: ProductModalProps) {
-  const [quantity, setQuantity] = useState(1);
+export function ProductModal({
+  product,
+  isOpen,
+  onClose,
+  onAddToCart,
+  toppingProducts = [],
+  initialQuantity = 1,
+  initialOptions = [],
+  initialNote = '',
+  isEditing = false,
+  cardElement = null
+}: ProductModalProps) {
+  const [quantity, setQuantity] = useState(initialQuantity);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, CartItemOption>>({});
   const [toppingQuantities, setToppingQuantities] = useState<Record<string, number>>({}); // choiceId -> quantity
   const [useToppings, setUseToppings] = useState(false); // false = không dùng, true = có dùng
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(initialNote);
+  const [showFlyingIcon, setShowFlyingIcon] = useState(false);
+  const [cardPosition, setCardPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Tạo dynamic topping options từ CUKCUK products
   const dynamicToppingOptions = useMemo(() => {
@@ -126,41 +145,71 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
   };
 
   useEffect(() => {
-    if (product) {
-      setQuantity(1);
-      setNote('');
-      setToppingQuantities({}); // Reset topping quantities
-      setUseToppings(false); // Default: không dùng topping
-      const options = getProductOptions();
-      const initialOptions: Record<string, CartItemOption> = {};
-      options.forEach((option) => {
-        if (option.choices.length > 0) {
-          let defaultChoice;
-          if (option.id === 'topping') {
-            // Skip topping default selection - use quantities instead
-            return;
-          } else if (option.id === 'ice-type') {
-            // Mặc định chọn "Có đá"
-            defaultChoice = option.choices.find(c => c.id === 'ice-type-with') || option.choices[2];
-          } else if (option.id === 'ice-level') {
-            // Mặc định 100%
-            defaultChoice = option.choices[option.choices.length - 1];
-          } else {
-            // Sugar và các option khác: chọn cuối (100%)
-            defaultChoice = option.choices[option.choices.length - 1];
-          }
-          initialOptions[option.id] = {
-            optionId: option.id,
-            optionName: option.name,
-            choiceId: defaultChoice.id,
-            choiceName: defaultChoice.name,
-            priceAdjustment: defaultChoice.priceAdjustment,
-          };
+    if (!product) return;
+
+    // Nếu đang edit, load initial values
+    if (isEditing && initialOptions && initialOptions.length > 0) {
+      setQuantity(initialQuantity);
+      setNote(initialNote);
+
+      // Convert initialOptions array to selectedOptions object
+      const optionsMap: Record<string, CartItemOption> = {};
+      const toppingQty: Record<string, number> = {};
+      let hasToppings = false;
+
+      initialOptions.forEach(opt => {
+        if (opt.optionId === 'topping') {
+          hasToppings = true;
+          // Count topping quantities
+          toppingQty[opt.choiceId] = (toppingQty[opt.choiceId] || 0) + 1;
+        } else {
+          optionsMap[opt.optionId] = opt;
         }
       });
-      setSelectedOptions(initialOptions);
+
+      setSelectedOptions(optionsMap);
+      setToppingQuantities(toppingQty);
+      setUseToppings(hasToppings);
+      return; // Early return để tránh set default
     }
-  }, [product]);
+
+    // Reset về default cho new item
+    setQuantity(1);
+    setNote('');
+    setToppingQuantities({});
+    setUseToppings(false);
+
+    const options = getProductOptions();
+    const defaultOptions: Record<string, CartItemOption> = {};
+
+    options.forEach((option) => {
+      if (option.choices.length > 0) {
+        let defaultChoice;
+        if (option.id === 'topping') {
+          // Skip topping default selection - use quantities instead
+          return;
+        } else if (option.id === 'ice-type') {
+          // Mặc định chọn "Có đá"
+          defaultChoice = option.choices.find(c => c.id === 'ice-type-with') || option.choices[2];
+        } else if (option.id === 'ice-level') {
+          // Mặc định 100%
+          defaultChoice = option.choices[option.choices.length - 1];
+        } else {
+          // Sugar và các option khác: chọn cuối (100%)
+          defaultChoice = option.choices[option.choices.length - 1];
+        }
+        defaultOptions[option.id] = {
+          optionId: option.id,
+          optionName: option.name,
+          choiceId: defaultChoice.id,
+          choiceName: defaultChoice.name,
+          priceAdjustment: defaultChoice.priceAdjustment,
+        };
+      }
+    });
+    setSelectedOptions(defaultOptions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id, isEditing]);
 
   if (!product) return null;
 
@@ -232,8 +281,38 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
       });
     }
 
+    // Save card position before closing modal (use center of card image)
+    if (!isEditing && cardElement) {
+      const rect = cardElement.getBoundingClientRect();
+      setCardPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 3, // Slightly higher to match product image center
+      });
+    }
+
+    // Add to cart immediately
     onAddToCart(product, quantity, filteredOptions, note || undefined);
+
+    // Close modal first
     onClose();
+
+    // Trigger animation after modal closes
+    if (!isEditing && cardElement) {
+      // Wait for modal to close (250ms for dialog animation)
+      setTimeout(() => {
+        setShowFlyingIcon(true);
+
+        // Clean up after animation completes
+        setTimeout(() => {
+          setShowFlyingIcon(false);
+          setCardPosition(null);
+        }, 1300); // Updated to match new 1.2s animation duration
+      }, 250);
+    }
+  };
+
+  const handleAnimationComplete = () => {
+    setShowFlyingIcon(false);
   };
 
   return (
@@ -464,14 +543,24 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
         {/* Add to cart button - sticky on mobile */}
         <div className="sticky bottom-0 px-3 sm:px-4 pb-4 pt-2 bg-white border-t border-gray-100">
           <Button
+            ref={addToCartButtonRef}
             className="w-full bg-amber-600 hover:bg-amber-700 text-white h-11 sm:h-12 text-sm sm:text-base font-semibold rounded-xl shadow-lg shadow-amber-600/30"
             onClick={handleAddToCart}
           >
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-            Thêm vào giỏ hàng : {formatPriceShort(calculateTotal())}
+            {isEditing ? 'Cập nhật' : 'Thêm vào giỏ hàng'} : {formatPriceShort(calculateTotal())}
           </Button>
         </div>
       </DialogContent>
+
+      {/* Flying cart animation */}
+      {showFlyingIcon && (
+        <FlyingCartIcon
+          startPosition={cardPosition}
+          endElement={typeof document !== 'undefined' ? document.querySelector('[data-cart-icon]') : null}
+          onComplete={handleAnimationComplete}
+        />
+      )}
     </Dialog>
   );
 }

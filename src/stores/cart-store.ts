@@ -12,6 +12,7 @@ interface CartStore {
   addItem: (product: Product, quantity: number, options: CartItemOption[], note?: string) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
+  updateItem: (itemId: string, quantity: number, options: CartItemOption[], note?: string) => void;
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -107,6 +108,29 @@ export const useCartStore = create<CartStore>()(
               : item
           ),
         }));
+      },
+
+      updateItem: (itemId, quantity, options, note) => {
+        set((state) => {
+          const item = state.items.find(i => i.id === itemId);
+          if (!item) return state;
+
+          const totalPrice = calculateItemTotal(item.product.price, quantity, options);
+
+          return {
+            items: state.items.map((i) =>
+              i.id === itemId
+                ? {
+                    ...i,
+                    quantity,
+                    selectedOptions: options,
+                    note,
+                    totalPrice,
+                  }
+                : i
+            ),
+          };
+        });
       },
 
       clearCart: () => set({ items: [] }),

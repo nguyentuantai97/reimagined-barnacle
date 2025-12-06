@@ -1,17 +1,48 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/stores/cart-store';
 import { CartItem } from './cart-item';
+import { ProductModal } from '@/components/menu/product-modal';
 import { formatPriceShort } from '@/lib/format';
+import { useMenu } from '@/hooks/use-menu';
+import { Product, CartItemOption } from '@/types';
 
 export function CartDrawer() {
-  const { items, isOpen, closeCart, updateQuantity, removeItem, getSubtotal } = useCartStore();
+  const { items, isOpen, closeCart, updateQuantity, removeItem, getSubtotal, updateItem } = useCartStore();
   const subtotal = getSubtotal();
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const { products } = useMenu();
+
+  // Lọc ra topping products
+  const toppingProducts = useMemo(() => {
+    return products.filter(p => p.category === 'topping');
+  }, [products]);
+
+  // Tìm item đang edit
+  const editingItem = items.find(item => item.id === editingItemId);
+
+  const handleEditItem = (itemId: string) => {
+    setEditingItemId(itemId);
+  };
+
+  const handleUpdateItem = (
+    product: Product,
+    quantity: number,
+    options: CartItemOption[],
+    note?: string
+  ) => {
+    if (editingItemId) {
+      updateItem(editingItemId, quantity, options, note);
+      setEditingItemId(null);
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={closeCart}>
@@ -49,6 +80,7 @@ export function CartDrawer() {
                     item={item}
                     onUpdateQuantity={updateQuantity}
                     onRemove={removeItem}
+                    onEdit={handleEditItem}
                   />
                 ))}
               </div>
@@ -89,6 +121,21 @@ export function CartDrawer() {
           </>
         )}
       </SheetContent>
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <ProductModal
+          product={editingItem.product}
+          isOpen={!!editingItemId}
+          onClose={() => setEditingItemId(null)}
+          onAddToCart={handleUpdateItem}
+          toppingProducts={toppingProducts}
+          initialQuantity={editingItem.quantity}
+          initialOptions={editingItem.selectedOptions}
+          initialNote={editingItem.note}
+          isEditing={true}
+        />
+      )}
     </Sheet>
   );
 }

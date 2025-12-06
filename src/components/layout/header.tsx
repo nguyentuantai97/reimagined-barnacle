@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from '@/components/ui/logo';
 import { useCartStore } from '@/stores/cart-store';
 import { useMenu } from '@/hooks/use-menu';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 // Icon mapping for categories
@@ -26,14 +26,26 @@ const categoryIcons: Record<string, typeof Coffee> = {
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartBounce, setCartBounce] = useState(false);
   const { getItemCount, openCart, _hasHydrated } = useCartStore();
   const { categories } = useMenu();
+  const prevItemCount = useRef(0);
   // Only show item count after hydration to prevent mismatch error
   const itemCount = _hasHydrated ? getItemCount() : 0;
   const pathname = usePathname();
 
   // Lọc categories để ẩn TOPPING và TẶNG
   const displayCategories = categories.filter(c => c.slug !== 'topping' && c.slug !== 'tang');
+
+  // Trigger bounce animation when cart count increases
+  useEffect(() => {
+    if (_hasHydrated && itemCount > prevItemCount.current) {
+      setCartBounce(true);
+      const timer = setTimeout(() => setCartBounce(false), 500);
+      return () => clearTimeout(timer);
+    }
+    prevItemCount.current = itemCount;
+  }, [itemCount, _hasHydrated]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-amber-100/50 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80">
@@ -156,8 +168,9 @@ export function Header() {
               size="icon"
               className="relative h-11 w-11 rounded-full hover:bg-amber-50"
               onClick={openCart}
+              data-cart-icon
             >
-              <ShoppingBag className="h-6 w-6 text-gray-700" />
+              <ShoppingBag className={cn("h-6 w-6 text-gray-700", cartBounce && "animate-cart-bounce")} />
               {itemCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full px-1.5 flex items-center justify-center bg-amber-600 text-white text-xs font-semibold border-2 border-white">
                   {itemCount}

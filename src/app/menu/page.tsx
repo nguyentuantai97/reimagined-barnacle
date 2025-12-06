@@ -20,6 +20,7 @@ function MenuContent() {
   const [activeCategory, setActiveCategory] = useState(categoryParam || 'all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductCard, setSelectedProductCard] = useState<HTMLElement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addItem, openCart } = useCartStore();
 
@@ -81,8 +82,9 @@ function MenuContent() {
     return result;
   }, [activeCategory, searchQuery, displayProducts]);
 
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (product: Product, cardElement?: HTMLElement) => {
     setSelectedProduct(product);
+    setSelectedProductCard(cardElement || null);
     setIsModalOpen(true);
   };
 
@@ -93,7 +95,7 @@ function MenuContent() {
     note?: string
   ) => {
     addItem(product, quantity, options, note);
-    openCart();
+    // Không tự động mở cart drawer - để khách tiếp tục chọn món khác
   };
 
   // Count products per category for display (không tính topping)
@@ -236,6 +238,7 @@ function MenuContent() {
         onClose={() => setIsModalOpen(false)}
         onAddToCart={handleAddToCart}
         toppingProducts={toppingProducts}
+        cardElement={selectedProductCard}
       />
     </div>
   );

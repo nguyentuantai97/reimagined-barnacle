@@ -15,11 +15,17 @@ import { useCartStore } from '@/stores/cart-store';
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductCard, setSelectedProductCard] = useState<HTMLElement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { addItem, openCart } = useCartStore();
+  const { addItem } = useCartStore();
 
   // Use synced menu from CUKCUK
   const { categories, products } = useMenu();
+
+  // Lọc ra topping products để truyền cho modal
+  const toppingProducts = useMemo(() => {
+    return products.filter(p => p.category === 'topping');
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     return activeCategory === 'all'
@@ -27,8 +33,9 @@ export default function HomePage() {
       : products.filter((p) => p.category === activeCategory).slice(0, 8);
   }, [activeCategory, products]);
 
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (product: Product, cardElement?: HTMLElement) => {
     setSelectedProduct(product);
+    setSelectedProductCard(cardElement || null);
     setIsModalOpen(true);
   };
 
@@ -39,7 +46,7 @@ export default function HomePage() {
     note?: string
   ) => {
     addItem(product, quantity, options, note);
-    openCart();
+    // Không tự động mở cart drawer - để khách tiếp tục chọn món khác
   };
 
   return (
@@ -205,6 +212,8 @@ export default function HomePage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddToCart={handleAddToCart}
+        toppingProducts={toppingProducts}
+        cardElement={selectedProductCard}
       />
     </div>
   );

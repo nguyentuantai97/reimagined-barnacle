@@ -164,3 +164,73 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Flying cart animation with blur and glow */
+@keyframes fly-to-cart {
+  0% {
+    transform: translate(var(--start-x), var(--start-y)) scale(1) rotate(0deg);
+    opacity: 1;
+    filter: blur(0px) drop-shadow(0 0 8px rgba(245, 158, 11, 0.8));
+  }
+  15% {
+    transform: translate(
+      calc(var(--start-x) + (var(--end-x) - var(--start-x)) * 0.15),
+      calc(var(--start-y) + (var(--end-y) - var(--start-y)) * 0.15 - 50px)
+    ) scale(1.15) rotate(10deg);
+    opacity: 1;
+    filter: blur(0px) drop-shadow(0 0 12px rgba(245, 158, 11, 1));
+  }
+  40% {
+    transform: translate(
+      calc(var(--start-x) + (var(--end-x) - var(--start-x)) * 0.45),
+      calc(var(--start-y) + (var(--end-y) - var(--start-y)) * 0.45 - 90px)
+    ) scale(1) rotate(25deg);
+    opacity: 1;
+    filter: blur(0px) drop-shadow(0 0 16px rgba(245, 158, 11, 0.9));
+  }
+  70% {
+    transform: translate(
+      calc(var(--start-x) + (var(--end-x) - var(--start-x)) * 0.75),
+      calc(var(--start-y) + (var(--end-y) - var(--start-y)) * 0.75 - 50px)
+    ) scale(0.75) rotate(45deg);
+    opacity: 0.95;
+    filter: blur(0.5px) drop-shadow(0 0 12px rgba(245, 158, 11, 0.7));
+  }
+  90% {
+    transform: translate(
+      calc(var(--start-x) + (var(--end-x) - var(--start-x)) * 0.95),
+      calc(var(--start-y) + (var(--end-y) - var(--start-y)) * 0.95 - 10px)
+    ) scale(0.4) rotate(60deg);
+    opacity: 0.7;
+    filter: blur(1px) drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
+  }
+  100% {
+    transform: translate(var(--end-x), var(--end-y)) scale(0.2) rotate(70deg);
+    opacity: 0;
+    filter: blur(2px) drop-shadow(0 0 4px rgba(245, 158, 11, 0.3));
+  }
+}
+
+.animate-fly-to-cart {
+  animation: fly-to-cart 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+/* Cart icon bounce animation */
+@keyframes cart-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  75% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-cart-bounce {
+  animation: cart-bounce 0.5s ease-in-out;
+}

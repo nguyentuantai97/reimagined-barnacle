@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import Image from 'next/image';
 import { Plus, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,16 +11,26 @@ import { getProductImage } from '@/lib/data/product-images';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, cardElement?: HTMLElement) => void;
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
   // Get image from mapping or product data
   const imageUrl = product.image || getProductImage(product.id, product.category);
   const hasImage = Boolean(imageUrl);
 
+  const handleClick = () => {
+    onAddToCart(product, cardRef.current || undefined);
+  };
+
   return (
-    <Card className="group overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow bg-card">
+    <Card
+      ref={cardRef}
+      className="group overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow bg-card"
+      data-product-card={product.id}
+    >
       <div className="relative aspect-square overflow-hidden bg-secondary">
         {hasImage ? (
           <>
@@ -59,7 +70,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           </span>
           <Button
             size="icon"
-            onClick={() => onAddToCart(product)}
+            onClick={handleClick}
             disabled={!product.isAvailable}
             className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 w-8 sm:h-9 sm:w-9 rounded-full shrink-0"
           >

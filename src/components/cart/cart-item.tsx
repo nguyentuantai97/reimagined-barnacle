@@ -1,6 +1,6 @@
 'use client';
 
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minus, Plus, Trash2, Edit3 } from 'lucide-react';
 import { CartItem as CartItemType } from '@/types';
 import { formatPriceShort } from '@/lib/format';
 
@@ -8,9 +8,10 @@ interface CartItemProps {
   item: CartItemType;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemove: (itemId: string) => void;
+  onEdit?: (itemId: string) => void;
 }
 
-export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
+export function CartItem({ item, onUpdateQuantity, onRemove, onEdit }: CartItemProps) {
   // Phân loại options theo type
   const sugar = item.selectedOptions.find(opt => opt.optionId === 'sugar');
   const iceType = item.selectedOptions.find(opt => opt.optionId === 'ice-type');
@@ -86,13 +87,25 @@ export function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
           )}
         </div>
 
-        {/* Delete Button */}
-        <button
-          onClick={() => onRemove(item.id)}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {/* Action Buttons */}
+        <div className="flex gap-1 shrink-0">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(item.id)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+              title="Chỉnh sửa"
+            >
+              <Edit3 className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            onClick={() => onRemove(item.id)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Xóa"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Price & Quantity Row */}
