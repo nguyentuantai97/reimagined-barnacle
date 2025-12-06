@@ -67,9 +67,16 @@ const fallbackToppingOptions = {
   ],
 };
 
+// Interface for topping with quantity
+interface ToppingSelection {
+  topping: CartItemOption;
+  quantity: number;
+}
+
 export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingProducts = [] }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, CartItemOption>>({});
+  const [toppingQuantities, setToppingQuantities] = useState<Record<string, number>>({}); // choiceId -> quantity
   const [note, setNote] = useState('');
 
   // Tạo dynamic topping options từ CUKCUK products
@@ -120,13 +127,15 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
     if (product) {
       setQuantity(1);
       setNote('');
+      setToppingQuantities({}); // Reset topping quantities
       const options = getProductOptions();
       const initialOptions: Record<string, CartItemOption> = {};
       options.forEach((option) => {
         if (option.choices.length > 0) {
           let defaultChoice;
           if (option.id === 'topping') {
-            defaultChoice = option.choices[0]; // "Không" cho topping
+            // Skip topping default selection - use quantities instead
+            return;
           } else if (option.id === 'ice-type') {
             // Mặc định chọn "Có đá"
             defaultChoice = option.choices.find(c => c.id === 'ice-type-with') || option.choices[2];
@@ -180,7 +189,15 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
       },
       0
     );
-    return (product.price + optionsTotal) * quantity;
+
+    // Calculate topping total from quantities
+    const toppingOptions = getProductOptions().find(opt => opt.id === 'topping');
+    const toppingTotal = toppingOptions?.choices.reduce((sum, choice) => {
+      const qty = toppingQuantities[choice.id] || 0;
+      return sum + (choice.priceAdjustment * qty);
+    }, 0) || 0;
+
+    return (product.price + optionsTotal + toppingTotal) * quantity;
   };
 
   const handleAddToCart = () => {
@@ -191,6 +208,27 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
       }
       return true;
     });
+
+    // Add toppings based on quantities
+    const toppingOptions = getProductOptions().find(opt => opt.id === 'topping');
+    if (toppingOptions) {
+      toppingOptions.choices.forEach(choice => {
+        const qty = toppingQuantities[choice.id] || 0;
+        if (qty > 0 && choice.id !== 'topping-none') {
+          // Add each topping multiple times based on quantity
+          for (let i = 0; i < qty; i++) {
+            filteredOptions.push({
+              optionId: 'topping',
+              optionName: 'Topping',
+              choiceId: choice.id,
+              choiceName: choice.name,
+              priceAdjustment: choice.priceAdjustment,
+            });
+          }
+        }
+      });
+    }
+
     onAddToCart(product, quantity, filteredOptions, note || undefined);
     onClose();
   };
@@ -260,12 +298,68 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
               return null;
             }
 
+            // Special rendering for topping with quantity selectors
+            if (option.id === 'topping') {
+              return (
+                <div key={option.id}>
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-1.5">{option.name}</h3>
+                  <div className="space-y-2">
+                    {option.choices.map((choice) => {
+                      if (choice.id === 'topping-none') return null; // Skip "Không" option
+                      const qty = toppingQuantities[choice.id] || 0;
+                      return (
+                        <div key={choice.id} className="flex items-center justify-between py-2 px-3 rounded-lg border-2 border-gray-200 bg-white">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <span className="block text-xs sm:text-sm font-medium text-gray-700 truncate">
+                              {choice.name}
+                            </span>
+                            {choice.priceAdjustment > 0 && (
+                              <span className="block text-[10px] sm:text-xs text-amber-600">
+                                +{formatPriceShort(choice.priceAdjustment)}/cái
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                              onClick={() => setToppingQuantities(prev => ({
+                                ...prev,
+                                [choice.id]: Math.max(0, (prev[choice.id] || 0) - 1)
+                              }))}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-6 text-center font-bold text-sm">{qty}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 rounded-full bg-amber-600 hover:bg-amber-700 text-white"
+                              onClick={() => setToppingQuantities(prev => ({
+                                ...prev,
+                                [choice.id]: (prev[choice.id] || 0) + 1
+                              }))}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
+            // Regular options (sugar, ice-type, ice-level)
             return (
               <div key={option.id}>
                 <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-1.5">{option.name}</h3>
                 <div className={cn(
                   'grid gap-1.5 sm:gap-2',
-                  option.id === 'topping' ? 'grid-cols-3' :
                   option.id === 'ice-type' ? 'grid-cols-3' : 'grid-cols-4'
                 )}>
                   {option.choices.map((choice) => {
