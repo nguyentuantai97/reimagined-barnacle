@@ -304,17 +304,18 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
               // Filter out "Không" option and check if there are any toppings
               const availableToppings = option.choices.filter(c => c.id !== 'topping-none');
 
-              // Ẩn section topping nếu không có topping nào
-              if (availableToppings.length === 0) {
-                return null;
-              }
-
               return (
                 <div key={option.id}>
                   <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-1.5">{option.name}</h3>
-                  {/* Grid 2 cột cho mobile và desktop */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {availableToppings.map((choice) => {
+                  {availableToppings.length === 0 ? (
+                    // Hiển thị message khi không có topping
+                    <div className="py-3 px-4 rounded-lg bg-gray-50 border border-gray-200 text-center">
+                      <span className="text-xs sm:text-sm text-gray-500">Sản phẩm này không có topping</span>
+                    </div>
+                  ) : (
+                    // Grid 2 cột cho mobile và desktop khi có topping
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableToppings.map((choice) => {
                       const qty = toppingQuantities[choice.id] || 0;
                       return (
                         <div key={choice.id} className="flex items-center justify-between py-2 px-2 sm:px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-amber-300 transition-colors">
@@ -358,7 +359,8 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
                         </div>
                       );
                     })}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             }
