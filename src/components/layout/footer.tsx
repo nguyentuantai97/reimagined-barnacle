@@ -64,12 +64,13 @@ export function Footer() {
                 href="https://zalo.me/84976257223"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8B5A2B] hover:bg-[#0068FF] transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0068FF] hover:bg-[#005CE6] transition-colors"
                 title="Zalo"
               >
-                <svg className="h-5 w-5" viewBox="0 0 48 48" fill="currentColor">
-                  <path d="M24 4C13.5 4 5 11.9 5 21.7c0 5.5 2.9 10.5 7.4 13.7L11 44l9.3-4.2c1.2.2 2.4.3 3.7.3 10.5 0 19-7.9 19-17.7S34.5 4 24 4zm0 3c8.8 0 16 6.5 16 14.7S32.8 36.4 24 36.4c-1.2 0-2.3-.1-3.4-.4l-.6-.1-.6.2-5.6 2.5 1-5.7.1-.6-.4-.5C10.6 29.3 8 25.7 8 21.7 8 13.5 15.2 7 24 7z"/>
-                  <path d="M19.5 18.5h-4v9h4v-9zm5 0h-4l3.5 4.5-3.5 4.5h4l2.5-3.2 2.5 3.2h4l-3.5-4.5 3.5-4.5h-4l-2.5 3.2-2.5-3.2z"/>
+                <svg className="h-6 w-6" viewBox="0 0 48 48" fill="none">
+                  <rect width="48" height="48" rx="12" fill="white"/>
+                  <path d="M24 8C14.6 8 7 14.8 7 23.2c0 4.2 1.8 8 4.8 10.8L10.5 42l7.2-3.2c1 .2 2 .2 3 .2 9.4 0 17-6.8 17-15.2S33.4 8 24 8z" fill="#0068FF"/>
+                  <path d="M18 19h8v2h-6v2h6v2h-6v2h6v2h-8V19zm10 0h8v2h-6v2h4v6h-2v-4h-2v4h-2V19z" fill="white"/>
                 </svg>
               </a>
               <a
