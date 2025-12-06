@@ -26,6 +26,7 @@ const categoryIcons: Record<string, typeof Coffee> = {
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileMenuExpanded, setMobileMenuExpanded] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const { getItemCount, openCart, _hasHydrated } = useCartStore();
   const { categories } = useMenu();
@@ -199,15 +200,15 @@ export function Header() {
                   <Menu className="h-5 w-5 text-gray-700" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-80 p-0 overflow-y-auto">
+              <SheetContent side="right" className="w-80 p-0 flex flex-col h-full">
                 {/* Mobile Header */}
-                <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-b border-amber-100">
+                <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-b border-amber-100 shrink-0">
                   <Logo size="lg" variant="header" />
                   <p className="text-sm text-amber-700 mt-2">Trà sữa & Trà trái cây</p>
                 </div>
 
-                {/* Mobile Navigation */}
-                <nav className="p-4">
+                {/* Mobile Navigation - Scrollable */}
+                <nav className="flex-1 overflow-y-auto p-4 pb-24">
                   {/* Trang chủ */}
                   <Link
                     href="/"
@@ -223,39 +224,51 @@ export function Header() {
                     Trang chủ
                   </Link>
 
-                  {/* Thực đơn Header */}
-                  <div className="mt-4 mb-2">
-                    <Link
-                      href="/menu"
-                      onClick={() => setMobileMenuOpen(false)}
+                  {/* Thực đơn with Collapsible Submenu */}
+                  <div className="mt-4">
+                    <button
+                      onClick={() => setMobileMenuExpanded(!mobileMenuExpanded)}
                       className={cn(
-                        'flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors',
-                        pathname === '/menu'
+                        'flex items-center justify-between w-full px-4 py-3 rounded-xl text-base font-medium transition-colors',
+                        pathname === '/menu' || pathname.startsWith('/menu')
                           ? 'bg-amber-100 text-amber-800'
                           : 'text-gray-700 hover:bg-amber-50 hover:text-amber-700'
                       )}
                     >
-                      <Coffee className="h-5 w-5" />
-                      Thực đơn
-                    </Link>
-                  </div>
+                      <div className="flex items-center gap-3">
+                        <Coffee className="h-5 w-5" />
+                        Thực đơn
+                      </div>
+                      <ChevronDown className={cn('h-4 w-4 transition-transform', mobileMenuExpanded && 'rotate-180')} />
+                    </button>
 
-                  {/* Categories */}
-                  <div className="ml-4 space-y-1 border-l-2 border-amber-200 pl-4">
-                    {displayCategories.map((category) => {
-                      const Icon = categoryIcons[category.slug] || Coffee;
-                      return (
+                    {/* Categories - Collapsible */}
+                    {mobileMenuExpanded && (
+                      <div className="ml-4 mt-2 space-y-1 border-l-2 border-amber-200 pl-4">
                         <Link
-                          key={category.id}
-                          href={`/menu?category=${category.slug}`}
+                          href="/menu"
                           onClick={() => setMobileMenuOpen(false)}
                           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
                         >
-                          <Icon className="h-4 w-4" />
-                          {category.name}
+                          <Coffee className="h-4 w-4" />
+                          Tất cả
                         </Link>
-                      );
-                    })}
+                        {displayCategories.map((category) => {
+                          const Icon = categoryIcons[category.slug] || Coffee;
+                          return (
+                            <Link
+                              key={category.id}
+                              href={`/menu?category=${category.slug}`}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                            >
+                              <Icon className="h-4 w-4" />
+                              {category.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Tra cứu đơn hàng */}
@@ -276,8 +289,8 @@ export function Header() {
                   </div>
                 </nav>
 
-                {/* Mobile Contact */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white">
+                {/* Mobile Contact - Fixed at bottom */}
+                <div className="shrink-0 p-4 border-t border-gray-100 bg-white">
                   <a
                     href="tel:0976257223"
                     className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-amber-600 text-white font-medium hover:bg-amber-700 transition-colors"
