@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCartStore } from '@/stores/cart-store';
 import { CartItem } from './cart-item';
 import { formatPriceShort } from '@/lib/format';
@@ -41,9 +40,9 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            {/* Cart Items */}
-            <ScrollArea className="flex-1">
-              <div className="px-6 py-4 space-y-1">
+            {/* Cart Items - với overflow scroll */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-6 py-4 space-y-3">
                 {items.map((item) => (
                   <CartItem
                     key={item.id}
@@ -53,10 +52,10 @@ export function CartDrawer() {
                   />
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Footer */}
-            <div className="border-t bg-white px-6 py-4 space-y-4">
+            <div className="border-t bg-white px-6 py-4 space-y-4 shrink-0">
               {/* Summary */}
               <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
