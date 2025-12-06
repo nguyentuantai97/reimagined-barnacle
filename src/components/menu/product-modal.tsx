@@ -54,13 +54,14 @@ const defaultIceLevelOptions = {
 };
 
 // Fallback topping options nếu không có từ CUKCUK
+// Sắp xếp theo thứ tự logic: TC → Thạch → Topping đặc biệt
 const fallbackToppingOptions = {
   id: 'topping',
   name: 'Topping',
   choices: [
     { id: 'topping-none', name: 'Không', priceAdjustment: 0 },
-    { id: 'topping-tran-chau-den', name: 'TC Đen', priceAdjustment: 8000 },
     { id: 'topping-tran-chau-trang', name: 'TC Trắng', priceAdjustment: 8000 },
+    { id: 'topping-tran-chau-den', name: 'TC Đen', priceAdjustment: 8000 },
     { id: 'topping-thach-dua', name: 'Thạch dừa', priceAdjustment: 8000 },
     { id: 'topping-pudding', name: 'Pudding', priceAdjustment: 10000 },
     { id: 'topping-kem-cheese', name: 'Kem cheese', priceAdjustment: 12000 },
@@ -300,31 +301,39 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
 
             // Special rendering for topping with quantity selectors
             if (option.id === 'topping') {
+              // Filter out "Không" option and check if there are any toppings
+              const availableToppings = option.choices.filter(c => c.id !== 'topping-none');
+
+              // Ẩn section topping nếu không có topping nào
+              if (availableToppings.length === 0) {
+                return null;
+              }
+
               return (
                 <div key={option.id}>
                   <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-1.5">{option.name}</h3>
-                  <div className="space-y-2">
-                    {option.choices.map((choice) => {
-                      if (choice.id === 'topping-none') return null; // Skip "Không" option
+                  {/* Grid 2 cột cho mobile và desktop */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {availableToppings.map((choice) => {
                       const qty = toppingQuantities[choice.id] || 0;
                       return (
-                        <div key={choice.id} className="flex items-center justify-between py-2 px-3 rounded-lg border-2 border-gray-200 bg-white">
-                          <div className="flex-1 min-w-0 mr-3">
+                        <div key={choice.id} className="flex items-center justify-between py-2 px-2 sm:px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-amber-300 transition-colors">
+                          <div className="flex-1 min-w-0 mr-2">
                             <span className="block text-xs sm:text-sm font-medium text-gray-700 truncate">
                               {choice.name}
                             </span>
                             {choice.priceAdjustment > 0 && (
                               <span className="block text-[10px] sm:text-xs text-amber-600">
-                                +{formatPriceShort(choice.priceAdjustment)}/cái
+                                +{formatPriceShort(choice.priceAdjustment)}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                              className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
                               onClick={() => setToppingQuantities(prev => ({
                                 ...prev,
                                 [choice.id]: Math.max(0, (prev[choice.id] || 0) - 1)
@@ -332,12 +341,12 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            <span className="w-6 text-center font-bold text-sm">{qty}</span>
+                            <span className="w-5 sm:w-6 text-center font-bold text-xs sm:text-sm">{qty}</span>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 rounded-full bg-amber-600 hover:bg-amber-700 text-white"
+                              className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-amber-600 hover:bg-amber-700 text-white"
                               onClick={() => setToppingQuantities(prev => ({
                                 ...prev,
                                 [choice.id]: (prev[choice.id] || 0) + 1
