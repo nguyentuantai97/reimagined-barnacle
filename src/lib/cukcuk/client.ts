@@ -161,6 +161,10 @@ export async function createCukcukOrder(
         : '[ĐẾN LẤY TẠI QUÁN]';
     }
 
+    // Calculate delivery time: 30 minutes from now for delivery, 15 minutes for pickup
+    const deliveryMinutes = orderType === 'delivery' ? 30 : 15;
+    const shippingDueDate = new Date(Date.now() + deliveryMinutes * 60 * 1000);
+
     // Create online order request
     const orderRequest: CukcukOrderOnlineRequest = {
       BranchId: branchId,
@@ -169,7 +173,7 @@ export async function createCukcukOrder(
       CustomerName: customer.name,
       CustomerTel: customer.phone,
       ShippingAddress: shippingAddress,
-      ShippingDueDate: new Date().toISOString(),
+      ShippingDueDate: shippingDueDate.toISOString(),
       OrderNote: orderNote,
       PaymentStatus: 1, // 1 = unpaid (COD)
       OrderSource: 1, // 1 = restaurant website
