@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Menu, Phone, Home, ChevronDown, Coffee, Milk, IceCream, Cookie, Leaf, Gift } from 'lucide-react';
+import { ShoppingBag, Menu, Phone, Home, ChevronDown, Coffee, Milk, IceCream, Cookie, Leaf, Gift, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -149,6 +149,20 @@ export function Header() {
                 </div>
               </div>
             </div>
+
+            {/* Tra cứu đơn hàng */}
+            <Link
+              href="/track-order"
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                pathname === '/track-order'
+                  ? 'bg-amber-100 text-amber-800'
+                  : 'text-gray-700 hover:bg-amber-50 hover:text-amber-700'
+              )}
+            >
+              <Package className="h-4 w-4" />
+              <span>Tra cứu đơn hàng</span>
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -242,6 +256,23 @@ export function Header() {
                         </Link>
                       );
                     })}
+                  </div>
+
+                  {/* Tra cứu đơn hàng */}
+                  <div className="mt-4">
+                    <Link
+                      href="/track-order"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors',
+                        pathname === '/track-order'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'text-gray-700 hover:bg-amber-50 hover:text-amber-700'
+                      )}
+                    >
+                      <Package className="h-5 w-5" />
+                      Tra cứu đơn hàng
+                    </Link>
                   </div>
                 </nav>
 
