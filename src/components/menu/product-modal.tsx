@@ -543,7 +543,6 @@ export function ProductModal({
         {/* Add to cart button - sticky on mobile */}
         <div className="sticky bottom-0 px-3 sm:px-4 pb-4 pt-2 bg-white border-t border-gray-100">
           <Button
-            ref={addToCartButtonRef}
             className="w-full bg-amber-600 hover:bg-amber-700 text-white h-11 sm:h-12 text-sm sm:text-base font-semibold rounded-xl shadow-lg shadow-amber-600/30"
             onClick={handleAddToCart}
           >
