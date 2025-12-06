@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Search, Package, Clock, CheckCircle, XCircle, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatPriceShort, formatVietnamesePhone } from '@/lib/format';
+import { formatPriceShort } from '@/lib/format';
 
 interface OrderInfo {
   orderNo: string;
@@ -172,7 +172,7 @@ export default function TrackOrderPage() {
                     </p>
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">SĐT:</span>{' '}
-                      {formatVietnamesePhone(order.customerPhone)}
+                      {order.customerPhone}
                     </p>
                   </div>
 
