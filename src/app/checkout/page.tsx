@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Loader2, Search, Truck, Store, Clock, Navigation } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Search, Truck, Store, Clock, Navigation, Phone, MessageCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import { Logo } from '@/components/ui/logo';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPriceShort, isValidVietnamesePhone } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { isShopOpen, BUSINESS_HOURS, SHOP_CONTACT } from '@/lib/business-hours';
 
 // Giá ship: 5.000đ/km
 const DELIVERY_PRICE_PER_KM = 5000;
@@ -92,6 +93,16 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [distance, setDistance] = useState<number | null>(null);
   const [distanceSource, setDistanceSource] = useState<'gps' | 'address' | null>(null);
+  const [shopOpen, setShopOpen] = useState(true);
+
+  // Check shop hours on mount and every minute
+  useEffect(() => {
+    setShopOpen(isShopOpen());
+    const interval = setInterval(() => {
+      setShopOpen(isShopOpen());
+    }, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -101,6 +112,9 @@ export default function CheckoutPage() {
     latitude: null as number | null,
     longitude: null as number | null,
   });
+
+  // Honeypot field for bot detection (hidden from users)
+  const [honeypot, setHoneypot] = useState('');
 
   const subtotal = getSubtotal();
   const deliveryFee = orderType === 'delivery' ? calculateDeliveryFee(distance, subtotal) : 0;
@@ -225,10 +239,15 @@ export default function CheckoutPage() {
     }
 
     if (orderType === 'delivery') {
-      if (!formData.address.trim()) {
-        newErrors.address = 'Vui lòng nhập địa chỉ giao hàng';
+      // Chỉ cần 1 trong 2: GPS hoặc địa chỉ
+      const hasGPS = formData.latitude !== null && formData.longitude !== null;
+      const hasAddress = formData.address.trim().length > 0;
+
+      if (!hasGPS && !hasAddress) {
+        newErrors.address = 'Vui lòng nhập địa chỉ hoặc bấm nút GPS để định vị';
       }
 
+      // Bắt buộc phải tính phí ship (cần distance)
       if (distance === null) {
         newErrors.address = 'Vui lòng bấm nút định vị để tính phí giao hàng';
       }
@@ -251,11 +270,16 @@ export default function CheckoutPage() {
         customer: {
           name: formData.name,
           phone: formData.phone,
-          address: orderType === 'delivery' ? formData.address : SHOP_ADDRESS,
+          // Nếu giao hàng: ưu tiên địa chỉ text, nếu không có thì dùng GPS
+          address: orderType === 'delivery'
+            ? (formData.address.trim() || `GPS: ${formData.latitude}, ${formData.longitude}`)
+            : SHOP_ADDRESS,
           latitude: orderType === 'delivery' ? formData.latitude : null,
           longitude: orderType === 'delivery' ? formData.longitude : null,
           note: formData.note,
         },
+        // Honeypot for bot detection
+        _hp: honeypot,
         items: items.map((item) => ({
           productId: item.product.id,
           cukcukId: item.product.cukcukId,
@@ -312,6 +336,69 @@ export default function CheckoutPage() {
           Thanh toán
         </h1>
 
+        {/* Shop Closed Notice - Professional & Responsive */}
+        {!shopOpen && (
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border border-amber-200/60 rounded-2xl mb-6 shadow-lg">
+            {/* Decorative background elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-amber-200/30 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 md:w-32 md:h-32 bg-orange-200/30 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+            <div className="relative p-5 md:p-8">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-amber-500/10 rounded-full border-2 border-amber-400/50">
+                  <Clock className="h-6 w-6 md:h-7 md:w-7 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-bold text-gray-800">
+                    Ngoài giờ hoạt động
+                  </h3>
+                  <p className="text-sm text-amber-700 font-medium">
+                    {BUSINESS_HOURS.open}:00 – {BUSINESS_HOURS.close}:00 hàng ngày
+                  </p>
+                </div>
+              </div>
+
+              {/* Message */}
+              <p className="text-gray-600 text-sm md:text-base mb-5 leading-relaxed">
+                Rất tiếc, hệ thống tạm ngừng nhận đơn online. Nếu cần hỗ trợ gấp, quý khách vui lòng liên hệ:
+              </p>
+
+              {/* Contact Buttons - Responsive Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <a
+                  href={`tel:${SHOP_CONTACT.phone}`}
+                  className="group flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-3.5 rounded-xl font-semibold shadow-md hover:shadow-lg hover:from-amber-600 hover:to-amber-700 transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center justify-center w-9 h-9 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
+                    <Phone className="h-5 w-5" />
+                  </div>
+                  <span className="text-base">{SHOP_CONTACT.phoneDisplay}</span>
+                </a>
+                <a
+                  href={SHOP_CONTACT.fanpage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center justify-center gap-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-3.5 rounded-xl font-semibold shadow-md hover:shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center justify-center w-9 h-9 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
+                    <MessageCircle className="h-5 w-5" />
+                  </div>
+                  <span className="text-base">Nhắn tin Fanpage</span>
+                </a>
+              </div>
+
+              {/* Footer message */}
+              <p className="text-center text-amber-700/80 text-xs md:text-sm mt-5 font-medium">
+                Xin cảm ơn và hẹn gặp lại quý khách!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Hide form when shop is closed */}
+        {shopOpen && (
+        <>
         {/* Order Type Tabs */}
         <div className="bg-white rounded-xl p-1.5 mb-6 inline-flex shadow-sm border border-gray-200">
           <button
@@ -353,6 +440,20 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Honeypot field - hidden from users, visible to bots */}
+                  <div className="hidden" aria-hidden="true">
+                    <label htmlFor="website">Website</label>
+                    <input
+                      type="text"
+                      id="website"
+                      name="website"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
                   {/* Name */}
                   <div className="space-y-2">
                     <Label htmlFor="name">
@@ -394,7 +495,7 @@ export default function CheckoutPage() {
                   {orderType === 'delivery' ? (
                     <div className="space-y-2">
                       <Label htmlFor="address">
-                        Địa chỉ giao hàng <span className="text-red-500">*</span>
+                        Địa chỉ giao hàng
                       </Label>
                       <div className="flex gap-2">
                         <Input
@@ -402,7 +503,7 @@ export default function CheckoutPage() {
                           name="address"
                           value={formData.address}
                           onChange={handleChange}
-                          placeholder="Nhập địa chỉ giao hàng"
+                          placeholder="Nhập địa chỉ hoặc dùng GPS bên dưới"
                           className={`flex-1 ${errors.address ? 'border-red-500' : ''}`}
                         />
                         <Button
@@ -411,7 +512,7 @@ export default function CheckoutPage() {
                           onClick={getLocationFromGPS}
                           disabled={isGettingLocation}
                           className="shrink-0"
-                          title="Lấy vị trí GPS"
+                          title="Lấy vị trí GPS và tính phí ship"
                         >
                           {isGettingLocation ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -435,14 +536,14 @@ export default function CheckoutPage() {
                         </Button>
                       </div>
                       <p className="text-xs text-gray-500">
-                        Bấm <MapPin className="h-3 w-3 inline" /> để dùng GPS hoặc <Search className="h-3 w-3 inline" /> để tính từ địa chỉ
+                        <MapPin className="h-3 w-3 inline" /> Dùng GPS (nhanh) hoặc nhập địa chỉ rồi bấm <Search className="h-3 w-3 inline" /> để tính phí ship
                       </p>
                       {errors.address && (
                         <p className="text-sm text-red-500">{errors.address}</p>
                       )}
                       {distance !== null && (
                         <p className="text-sm text-green-600">
-                          ✓ {distanceSource === 'gps' ? 'GPS' : 'Địa chỉ'} - Khoảng cách: {distance.toFixed(1)} km
+                          ✓ {distanceSource === 'gps' ? 'Định vị GPS' : 'Tính từ địa chỉ'} - Khoảng cách: {distance.toFixed(1)} km
                         </p>
                       )}
                     </div>
@@ -497,14 +598,16 @@ export default function CheckoutPage() {
                   {/* Submit Button - Desktop */}
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-base hidden lg:flex"
+                    disabled={isSubmitting || !shopOpen}
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-base hidden lg:flex disabled:bg-gray-400"
                   >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         Đang xử lý...
                       </>
+                    ) : !shopOpen ? (
+                      'Ngoài giờ hoạt động'
                     ) : (
                       `Xác nhận đặt hàng - ${formatPriceShort(total)}`
                     )}
@@ -587,14 +690,16 @@ export default function CheckoutPage() {
             <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-base"
+                disabled={isSubmitting || !shopOpen}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-base disabled:bg-gray-400"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Đang xử lý...
                   </>
+                ) : !shopOpen ? (
+                  'Ngoài giờ hoạt động'
                 ) : (
                   `Xác nhận đặt hàng - ${formatPriceShort(total)}`
                 )}
@@ -602,6 +707,8 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

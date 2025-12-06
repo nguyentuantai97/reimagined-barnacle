@@ -32,6 +32,9 @@ export function Header() {
   const itemCount = _hasHydrated ? getItemCount() : 0;
   const pathname = usePathname();
 
+  // Lọc categories để ẩn TOPPING và TẶNG
+  const displayCategories = categories.filter(c => c.slug !== 'topping' && c.slug !== 'tang');
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-amber-100/50 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80">
       <div className="container mx-auto px-4">
@@ -98,7 +101,7 @@ export function Header() {
 
                   {/* Categories Grid */}
                   <div className="grid grid-cols-2 gap-2">
-                    {categories.map((category) => {
+                    {displayCategories.map((category) => {
                       const Icon = categoryIcons[category.slug] || Coffee;
                       return (
                         <Link
@@ -212,7 +215,7 @@ export function Header() {
 
                   {/* Categories */}
                   <div className="ml-4 space-y-1 border-l-2 border-amber-200 pl-4">
-                    {categories.map((category) => {
+                    {displayCategories.map((category) => {
                       const Icon = categoryIcons[category.slug] || Coffee;
                       return (
                         <Link
