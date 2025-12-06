@@ -78,6 +78,7 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, CartItemOption>>({});
   const [toppingQuantities, setToppingQuantities] = useState<Record<string, number>>({}); // choiceId -> quantity
+  const [useToppings, setUseToppings] = useState(false); // false = không dùng, true = có dùng
   const [note, setNote] = useState('');
 
   // Tạo dynamic topping options từ CUKCUK products
@@ -129,6 +130,7 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
       setQuantity(1);
       setNote('');
       setToppingQuantities({}); // Reset topping quantities
+      setUseToppings(false); // Default: không dùng topping
       const options = getProductOptions();
       const initialOptions: Record<string, CartItemOption> = {};
       options.forEach((option) => {
@@ -299,67 +301,102 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart, toppingPro
               return null;
             }
 
-            // Special rendering for topping with quantity selectors
+            // Special rendering for topping with tabs
             if (option.id === 'topping') {
               // Filter out "Không" option and check if there are any toppings
               const availableToppings = option.choices.filter(c => c.id !== 'topping-none');
 
               return (
                 <div key={option.id}>
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-1.5">{option.name}</h3>
-                  {availableToppings.length === 0 ? (
-                    // Hiển thị message khi không có topping
-                    <div className="py-3 px-4 rounded-lg bg-gray-50 border border-gray-200 text-center">
-                      <span className="text-xs sm:text-sm text-gray-500">Sản phẩm này không có topping</span>
-                    </div>
-                  ) : (
-                    // Grid 2 cột cho mobile và desktop khi có topping
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {availableToppings.map((choice) => {
-                      const qty = toppingQuantities[choice.id] || 0;
-                      return (
-                        <div key={choice.id} className="flex items-center justify-between py-2 px-2 sm:px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-amber-300 transition-colors">
-                          <div className="flex-1 min-w-0 mr-2">
-                            <span className="block text-xs sm:text-sm font-medium text-gray-700 truncate">
-                              {choice.name}
-                            </span>
-                            {choice.priceAdjustment > 0 && (
-                              <span className="block text-[10px] sm:text-xs text-amber-600">
-                                +{formatPriceShort(choice.priceAdjustment)}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
-                              onClick={() => setToppingQuantities(prev => ({
-                                ...prev,
-                                [choice.id]: Math.max(0, (prev[choice.id] || 0) - 1)
-                              }))}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-5 sm:w-6 text-center font-bold text-xs sm:text-sm">{qty}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-amber-600 hover:bg-amber-700 text-white"
-                              onClick={() => setToppingQuantities(prev => ({
-                                ...prev,
-                                [choice.id]: (prev[choice.id] || 0) + 1
-                              }))}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    </div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-600 mb-2">{option.name}</h3>
+
+                  {/* Tabs: Không dùng / Có dùng */}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUseToppings(false);
+                        setToppingQuantities({}); // Clear all topping selections
+                      }}
+                      className={cn(
+                        'flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium transition-all border-2',
+                        !useToppings
+                          ? 'bg-amber-600 text-white border-amber-600'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300'
+                      )}
+                    >
+                      Không thêm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUseToppings(true)}
+                      className={cn(
+                        'flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium transition-all border-2',
+                        useToppings
+                          ? 'bg-amber-600 text-white border-amber-600'
+                          : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300'
+                      )}
+                    >
+                      Thêm topping
+                    </button>
+                  </div>
+
+                  {/* Topping selector - chỉ hiện khi chọn "Có dùng" */}
+                  {useToppings && (
+                    availableToppings.length === 0 ? (
+                      // Message khi không có topping available
+                      <div className="py-3 px-4 rounded-lg bg-gray-50 border border-gray-200 text-center">
+                        <span className="text-xs sm:text-sm text-gray-500">Sản phẩm này không có topping</span>
+                      </div>
+                    ) : (
+                      // Grid 2 cột cho mobile và desktop
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {availableToppings.map((choice) => {
+                          const qty = toppingQuantities[choice.id] || 0;
+                          return (
+                            <div key={choice.id} className="flex items-center justify-between py-2 px-2 sm:px-3 rounded-lg border-2 border-gray-200 bg-white hover:border-amber-300 transition-colors">
+                              <div className="flex-1 min-w-0 mr-2">
+                                <span className="block text-xs sm:text-sm font-medium text-gray-700 truncate">
+                                  {choice.name}
+                                </span>
+                                {choice.priceAdjustment > 0 && (
+                                  <span className="block text-[10px] sm:text-xs text-amber-600">
+                                    +{formatPriceShort(choice.priceAdjustment)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                  onClick={() => setToppingQuantities(prev => ({
+                                    ...prev,
+                                    [choice.id]: Math.max(0, (prev[choice.id] || 0) - 1)
+                                  }))}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-5 sm:w-6 text-center font-bold text-xs sm:text-sm">{qty}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-amber-600 hover:bg-amber-700 text-white"
+                                  onClick={() => setToppingQuantities(prev => ({
+                                    ...prev,
+                                    [choice.id]: (prev[choice.id] || 0) + 1
+                                  }))}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )
                   )}
                 </div>
               );
