@@ -104,17 +104,54 @@ export function ProductModal({
   const dynamicToppingOptions = useMemo(() => {
     if (toppingProducts.length === 0) return fallbackToppingOptions;
 
+    // Thứ tự toppings theo yêu cầu
+    const toppingOrder = [
+      'TC Trắng',
+      'TC Đen',
+      'TC Hoàng Kim',
+      'Sương Sáo',
+      'Macchiato',
+      'Kem Phô Mai',
+      'Thạch Dừa',
+      'Thạch Caramel',
+      'Hạt nổ củ năng',
+      'Pudding Trứng',
+      'Đào Miếng',
+      'Trái Vải',
+      'Hạt Sen',
+      'Chôm Chôm',
+      'Full Topping',
+    ];
+
+    const toppingChoices = toppingProducts
+      .filter(t => t.isAvailable)
+      .map(t => ({
+        id: `topping-${t.id}`,
+        name: t.name.replace(/^Topping\s*/i, ''), // Bỏ prefix "Topping" nếu có
+        priceAdjustment: t.price,
+        cukcukId: t.cukcukId, // Lưu cukcukId để gửi order
+        cukcukCode: t.cukcukCode,
+      }))
+      .sort((a, b) => {
+        // Tìm vị trí trong toppingOrder
+        const indexA = toppingOrder.indexOf(a.name);
+        const indexB = toppingOrder.indexOf(b.name);
+
+        // Nếu cả 2 đều có trong order list
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        // Nếu chỉ A có trong order list, A đứng trước
+        if (indexA !== -1) return -1;
+        // Nếu chỉ B có trong order list, B đứng trước
+        if (indexB !== -1) return 1;
+        // Nếu cả 2 đều không có trong order list, giữ nguyên thứ tự alphabet
+        return a.name.localeCompare(b.name, 'vi');
+      });
+
     const choices = [
       { id: 'topping-none', name: 'Không', priceAdjustment: 0 },
-      ...toppingProducts
-        .filter(t => t.isAvailable)
-        .map(t => ({
-          id: `topping-${t.id}`,
-          name: t.name.replace(/^Topping\s*/i, ''), // Bỏ prefix "Topping" nếu có
-          priceAdjustment: t.price,
-          cukcukId: t.cukcukId, // Lưu cukcukId để gửi order
-          cukcukCode: t.cukcukCode,
-        }))
+      ...toppingChoices
     ];
 
     return {
