@@ -109,7 +109,7 @@ export function ProductModal({
     // Hàng 2: TC Hoàng Kim - Sương Sáo
     // Hàng 3: Macchiato - Kem Phô Mai
     // Hàng 4: Thạch Dừa - Thạch Caramel
-    // Hàng 5: Hạt nổ củ năng - Pudding Trứng
+    // Hàng 5: Hạt Nổ Củ Năng - Pudding Trứng
     // Hàng 6: Đào Miếng - Trái Vải
     // Hàng 7: Hạt Sen - Chôm Chôm
     // Cuối: Full Topping
@@ -118,7 +118,7 @@ export function ProductModal({
       'TC Hoàng Kim', 'Sương Sáo',             // Hàng 2
       'Macchiato', 'Kem Phô Mai',              // Hàng 3
       'Thạch Dừa', 'Thạch Caramel',            // Hàng 4
-      'Hạt nổ củ năng', 'Pudding Trứng',       // Hàng 5
+      'Hạt Nổ Củ Năng', 'Pudding Trứng',       // Hàng 5 - FIX: Đổi từ 'Hạt nổ củ năng' thành 'Hạt Nổ Củ Năng' để match với CUKCUK
       'Đào Miếng', 'Trái Vải',                 // Hàng 6
       'Hạt Sen', 'Chôm Chôm',                  // Hàng 7
       'Full Topping',                          // Cuối cùng
