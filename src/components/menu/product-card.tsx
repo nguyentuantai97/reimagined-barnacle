@@ -30,10 +30,10 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
               className="object-cover group-hover:scale-105 transition-transform duration-300"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
-            {/* Badge "Ảnh minh họa" */}
-            <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/60 text-white text-[10px] rounded-full backdrop-blur-sm">
+            {/* Badge disclaimer */}
+            <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/60 text-white text-[9px] rounded-full backdrop-blur-sm">
               <ImageIcon className="h-2.5 w-2.5" />
-              <span>Minh họa</span>
+              <span>Hình ảnh mang tính chất minh họa</span>
             </div>
           </>
         ) : (

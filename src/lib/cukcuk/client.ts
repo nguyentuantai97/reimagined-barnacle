@@ -9,12 +9,13 @@ import {
   CukcukBranchListResponse,
   CukcukOrderOnlineRequest,
   CukcukOrderOnlineItem,
+  CukcukOrderOnlineAddition,
   CukcukOrderOnlineResponse,
 } from './types';
 import { OrderItem, CustomerInfo } from '@/types';
 
-// Cache for branch ID
-let branchCache: { id: string; expiresAt: number } | null = null;
+// Fixed Branch ID from CUKCUK order-online URL
+const CUKCUK_BRANCH_ID = '0b3b0c76-4594-41bc-b13b-f3cd1d3bfe02';
 
 /**
  * Fetch branches from CUKCUK
@@ -65,31 +66,10 @@ export async function fetchCukcukBranches(): Promise<{
 }
 
 /**
- * Get the first active branch ID (cached)
+ * Get the branch ID - using fixed ID from CUKCUK order-online URL
  */
-async function getDefaultBranchId(): Promise<string> {
-  const now = Date.now();
-
-  // Check cache (valid for 1 hour)
-  if (branchCache && branchCache.expiresAt > now) {
-    return branchCache.id;
-  }
-
-  const result = await fetchCukcukBranches();
-  if (!result.success || !result.data || result.data.length === 0) {
-    throw new Error('No branches found in CUKCUK');
-  }
-
-  // Get first active branch
-  const activeBranch = result.data.find((b) => !b.Inactive) || result.data[0];
-
-  // Cache for 1 hour
-  branchCache = {
-    id: activeBranch.Id,
-    expiresAt: now + 60 * 60 * 1000,
-  };
-
-  return activeBranch.Id;
+function getDefaultBranchId(): string {
+  return CUKCUK_BRANCH_ID;
 }
 
 type OrderType = 'delivery' | 'pickup';
@@ -112,20 +92,34 @@ export async function createCukcukOrder(
 ): Promise<{ success: boolean; orderCode?: string; error?: string }> {
   try {
     const { accessToken, companyCode } = await getCukcukToken();
-    const branchId = await getDefaultBranchId();
+    const branchId = getDefaultBranchId();
 
     // Format order items for CUKCUK Online Orders API
     const orderItems: CukcukOrderOnlineItem[] = items.map((item) => {
-      // Build note from options and custom note
-      const optionDescriptions = item.options
-        .filter(
-          (opt) =>
-            opt.priceAdjustment > 0 || !opt.choiceName.toLowerCase().includes('không')
-        )
-        .map((opt) => opt.choiceName)
-        .join(', ');
+      // Build note from options (Ngọt, Đá, etc.)
+      const optionDescriptions: string[] = [];
+      const additions: CukcukOrderOnlineAddition[] = [];
 
-      const note = [optionDescriptions, item.note].filter(Boolean).join(' - ');
+      item.options.forEach((opt) => {
+        // Topping với giá > 0 -> thêm vào Additions
+        if (opt.optionId === 'topping' && opt.priceAdjustment > 0) {
+          // Extract cukcukId from choiceId if available (format: topping-{cukcukId})
+          const toppingId = opt.choiceId.replace('topping-', '');
+          additions.push({
+            Id: toppingId,
+            Description: opt.choiceName,
+            Price: opt.priceAdjustment,
+            Quantity: 1,
+          });
+        }
+        // Các option khác (không phải "Không") -> thêm vào note
+        else if (!opt.choiceName.toLowerCase().includes('không')) {
+          // Format: "Ngọt: 70%", "Đá: Đá riêng", etc.
+          optionDescriptions.push(`${opt.optionName}: ${opt.choiceName}`);
+        }
+      });
+
+      const note = [...optionDescriptions, item.note].filter(Boolean).join(' | ');
 
       // Use correct CUKCUK API field names
       return {
@@ -138,6 +132,7 @@ export async function createCukcukOrder(
         UnitName: item.cukcukUnitName,
         Note: note,
         Quantity: item.quantity,
+        Additions: additions.length > 0 ? additions : undefined,
       };
     });
 
@@ -147,10 +142,11 @@ export async function createCukcukOrder(
 
     // Build shipping address with Google Maps link for shipper navigation
     let shippingAddress = '';
+    let mapsLink = '';
     if (isDelivery && customer.address) {
       shippingAddress = customer.address;
       if (customer.latitude && customer.longitude) {
-        const mapsLink = `https://maps.google.com/?q=${customer.latitude},${customer.longitude}`;
+        mapsLink = `https://maps.google.com/?q=${customer.latitude},${customer.longitude}`;
         shippingAddress += ` | Maps: ${mapsLink}`;
       }
     } else {
@@ -186,14 +182,14 @@ export async function createCukcukOrder(
       OrderItems: orderItems,
     };
 
-    // Order request logged only in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('CUKCUK Order Request:', JSON.stringify(orderRequest, null, 2));
-    }
+    // Log order request for debugging
+    console.log('[CUKCUK] Order Request:', JSON.stringify(orderRequest, null, 2));
 
     const baseUrl = getCukcukBaseUrl();
+    const apiUrl = `${baseUrl}/api/v1/order-onlines/create`;
+    console.log('[CUKCUK] API URL:', apiUrl);
 
-    const response = await fetch(`${baseUrl}/api/v1/order-onlines/create`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -204,9 +200,8 @@ export async function createCukcukOrder(
     });
 
     const responseText = await response.text();
-    if (process.env.NODE_ENV === 'development') {
-      console.log('CUKCUK Order Response:', responseText);
-    }
+    console.log('[CUKCUK] Response Status:', response.status);
+    console.log('[CUKCUK] Response Body:', responseText);
 
     if (!response.ok) {
       if (response.status === 401) {

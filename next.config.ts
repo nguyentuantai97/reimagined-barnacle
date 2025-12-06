@@ -47,9 +47,9 @@ const nextConfig: NextConfig = {
         // Permissions policy - disable unnecessary features
         {
           key: 'Permissions-Policy',
-          value: 'camera=(), microphone=(), usb=()',
+          value: 'accelerometer=(), camera=(), geolocation=(self), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()',
         },
-        // Content Security Policy
+        // Content Security Policy - stricter
         {
           key: 'Content-Security-Policy',
           value: [
@@ -62,7 +62,27 @@ const nextConfig: NextConfig = {
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",
+            "object-src 'none'",
+            "upgrade-insecure-requests",
           ].join('; '),
+        },
+        // HSTS - Force HTTPS
+        {
+          key: 'Strict-Transport-Security',
+          value: 'max-age=31536000; includeSubDomains; preload',
+        },
+        // Cross-Origin policies
+        {
+          key: 'Cross-Origin-Opener-Policy',
+          value: 'same-origin',
+        },
+        {
+          key: 'Cross-Origin-Embedder-Policy',
+          value: 'credentialless',
+        },
+        {
+          key: 'Cross-Origin-Resource-Policy',
+          value: 'same-origin',
         },
       ],
     },
@@ -72,11 +92,19 @@ const nextConfig: NextConfig = {
       headers: [
         {
           key: 'Cache-Control',
-          value: 'no-store, no-cache, must-revalidate',
+          value: 'no-store, no-cache, must-revalidate, private',
         },
         {
           key: 'X-Content-Type-Options',
           value: 'nosniff',
+        },
+        {
+          key: 'X-Frame-Options',
+          value: 'DENY',
+        },
+        {
+          key: 'Content-Security-Policy',
+          value: "default-src 'none'; frame-ancestors 'none'",
         },
       ],
     },

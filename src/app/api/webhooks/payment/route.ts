@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  verifySePay Webhook,
+  verifySePayWebhook,
   verifyCassoWebhook,
   validateProviderIP,
 } from '@/lib/security/webhook-verify';
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         if (!secret) {
           throw new Error('SEPAY_WEBHOOK_SECRET not configured');
         }
-        const result = verifySePay Webhook(
+        const result = verifySePayWebhook(
           JSON.stringify(body.data || body),
           signature,
           secret

@@ -1,0 +1,10 @@
+# Security Policy for AN Milk Tea
+# https://anmilktea.online
+
+Contact: mailto:security@anmilktea.online
+Expires: 2025-12-31T23:59:59.000Z
+Preferred-Languages: vi, en
+Canonical: https://anmilktea.online/.well-known/security.txt
+
+# We take security seriously. If you discover a vulnerability,
+# please report it responsibly using the contact above.

@@ -4,6 +4,7 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/cart/cart-drawer';
+import { AntiDebugProvider } from '@/components/security/anti-debug-provider';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -33,12 +34,14 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
-        <CartDrawer />
+        <AntiDebugProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </div>
+          <CartDrawer />
+        </AntiDebugProvider>
       </body>
     </html>
   );

@@ -14,7 +14,7 @@ export interface WebhookVerificationResult {
  * Verify SePay webhook signature
  * SePay signs webhooks with HMAC-SHA256
  */
-export function verifySePay Webhook(
+export function verifySePayWebhook(
   payload: string,
   signature: string,
   secret: string

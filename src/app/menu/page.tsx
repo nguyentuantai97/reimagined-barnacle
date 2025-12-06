@@ -26,6 +26,21 @@ function MenuContent() {
   // Use synced menu from CUKCUK
   const { categories, products, isLoading, refetch } = useMenu();
 
+  // Lọc ra topping products để truyền cho modal
+  const toppingProducts = useMemo(() => {
+    return products.filter(p => p.category === 'topping');
+  }, [products]);
+
+  // Lọc categories để ẩn TOPPING và TẶNG
+  const displayCategories = useMemo(() => {
+    return categories.filter(c => c.slug !== 'topping' && c.slug !== 'tang');
+  }, [categories]);
+
+  // Lọc products để không hiển thị topping và tặng trong grid
+  const displayProducts = useMemo(() => {
+    return products.filter(p => p.category !== 'topping' && p.category !== 'tang');
+  }, [products]);
+
   // Sync URL param with state
   useEffect(() => {
     if (categoryParam && categoryParam !== activeCategory) {
@@ -46,7 +61,7 @@ function MenuContent() {
   };
 
   const filteredProducts = useMemo(() => {
-    let result = products;
+    let result = displayProducts; // Sử dụng displayProducts (đã lọc bỏ topping)
 
     // Filter by category
     if (activeCategory !== 'all') {
@@ -64,7 +79,7 @@ function MenuContent() {
     }
 
     return result;
-  }, [activeCategory, searchQuery, products]);
+  }, [activeCategory, searchQuery, displayProducts]);
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
@@ -81,14 +96,14 @@ function MenuContent() {
     openCart();
   };
 
-  // Count products per category for display
+  // Count products per category for display (không tính topping)
   const productCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: products.length };
-    categories.forEach((cat) => {
-      counts[cat.slug] = products.filter((p) => p.category === cat.slug).length;
+    const counts: Record<string, number> = { all: displayProducts.length };
+    displayCategories.forEach((cat) => {
+      counts[cat.slug] = displayProducts.filter((p) => p.category === cat.slug).length;
     });
     return counts;
-  }, [products, categories]);
+  }, [displayProducts, displayCategories]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/50 to-white">
@@ -165,7 +180,7 @@ function MenuContent() {
         {/* Category Tabs - Sticky */}
         <div className="sticky top-16 z-40 -mx-4 px-4 py-4 bg-gradient-to-b from-white via-white to-transparent">
           <CategoryTabs
-            categories={categories}
+            categories={displayCategories}
             activeCategory={activeCategory}
             onCategoryChange={handleCategoryChange}
             productCounts={productCounts}
@@ -176,7 +191,7 @@ function MenuContent() {
         {activeCategory !== 'all' && (
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
-              {categories.find((c) => c.slug === activeCategory)?.name || 'Danh mục'}
+              {displayCategories.find((c) => c.slug === activeCategory)?.name || 'Danh mục'}
             </h2>
             <span className="text-sm text-gray-500">
               {filteredProducts.length} sản phẩm
@@ -220,6 +235,7 @@ function MenuContent() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddToCart={handleAddToCart}
+        toppingProducts={toppingProducts}
       />
     </div>
   );

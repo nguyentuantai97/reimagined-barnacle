@@ -30,12 +30,92 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ================================
+# SECURITY - NEVER COMMIT THESE
+# ================================
 
-# vercel
+# Environment variables (CRITICAL - contains API keys, secrets)
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+!.env.example
+
+# Vercel
 .vercel
+
+# Secret keys and credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+credentials.json
+service-account.json
+secrets.json
+*secret*
+*credential*
+
+# API keys backup files
+api-keys.txt
+api-keys.json
+
+# Database files (may contain sensitive data)
+*.db
+*.sqlite
+*.sqlite3
+/data/
+
+# Log files (may contain sensitive info)
+*.log
+logs/
+
+# IDE and editor settings (may expose project structure)
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Cache directories
+.cache/
+.temp/
+.tmp/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Source maps (security - don't expose in production)
+*.map
+
+# Test coverage (may expose code structure)
+/coverage/
+.nyc_output/
+
+# Build artifacts
+/dist/
+/.turbo/
+
+# Package lock files (optional, uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
