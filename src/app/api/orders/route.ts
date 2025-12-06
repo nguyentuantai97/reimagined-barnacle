@@ -14,6 +14,7 @@ import { sendTelegramOrderNotification, isTelegramConfigured } from '@/lib/notif
 import { isShopOpen, getClosedMessage } from '@/lib/business-hours';
 import { logOrderTransaction, TransactionStatus } from '@/lib/security/transaction-logger';
 import { recordSecurityIncident } from '@/lib/security/auto-heal';
+import { queueOrder } from '@/lib/db/order-queue';
 
 type OrderType = 'delivery' | 'pickup';
 
@@ -193,8 +194,29 @@ export async function POST(request: Request) {
       } else {
         cukcukError = cukcukResult.error || 'Unknown error';
         console.error('[CUKCUK] Order sync failed:', cukcukError);
-        // Don't fail the order if CUKCUK fails - log and continue
-        // The store can manually process these orders
+
+        // Queue order để retry sau khi mở ca
+        // (VD: cửa hàng chưa mở ca nhưng khách đặt trong giờ bán)
+        try {
+          const queueResult = await queueOrder({
+            orderNo,
+            orderType,
+            customer,
+            items: body.items,
+            subtotal: body.subtotal,
+            deliveryFee: body.deliveryFee,
+            total: body.total,
+            error: cukcukError,
+          });
+
+          if (queueResult.success) {
+            console.log(`[CUKCUK] Order ${orderNo} queued for retry later`);
+          } else {
+            console.error('[CUKCUK] Failed to queue order:', queueResult.error);
+          }
+        } catch (queueError) {
+          console.error('[CUKCUK] Queue error:', queueError);
+        }
       }
     } else {
       // CUKCUK not configured - log warning
@@ -202,9 +224,6 @@ export async function POST(request: Request) {
       console.warn('[CUKCUK] CUKCUK_DOMAIN:', process.env.CUKCUK_DOMAIN ? 'SET' : 'NOT SET');
       console.warn('[CUKCUK] CUKCUK_SECRET_KEY:', process.env.CUKCUK_SECRET_KEY ? 'SET' : 'NOT SET');
     }
-
-    // TODO: Save order to local database for backup
-    // This would be implemented with Drizzle ORM
 
     // Log order transaction for audit trail
     logOrderTransaction({
@@ -221,6 +240,7 @@ export async function POST(request: Request) {
     });
 
     // Send Telegram notification (non-blocking)
+    // Bao gồm cảnh báo nếu đơn không sync được lên CUKCUK (VD: chưa mở ca)
     if (isTelegramConfigured()) {
       sendTelegramOrderNotification({
         orderNo,
@@ -230,6 +250,8 @@ export async function POST(request: Request) {
         subtotal: body.subtotal,
         deliveryFee: body.deliveryFee,
         total: body.total,
+        cukcukSynced,
+        cukcukError: cukcukError || undefined,
       }).then((result) => {
         if (!result.success) {
           console.error('Telegram notification failed:', result.error);

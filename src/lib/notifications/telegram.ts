@@ -22,6 +22,8 @@ interface OrderNotificationData {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  cukcukSynced?: boolean;
+  cukcukError?: string;
 }
 
 /**
@@ -48,6 +50,11 @@ export async function sendTelegramOrderNotification(
     const isDelivery = data.orderType === 'delivery';
     const orderTypeText = isDelivery ? '🚚 GIAO HÀNG' : '🏪 ĐẾN LẤY';
 
+    // Cảnh báo nếu đơn không sync được lên CUKCUK (VD: chưa mở ca)
+    const syncWarning = data.cukcukSynced === false
+      ? `\n⚠️ <b>CHƯA SYNC CUKCUK</b>\n<i>${data.cukcukError || 'Cần nhập đơn thủ công hoặc retry khi mở ca'}</i>\n`
+      : '';
+
     // Build items list
     const itemsList = data.items
       .map((item, i) => {
@@ -69,7 +76,7 @@ export async function sendTelegramOrderNotification(
     // Build message
     const message = `
 🧋 <b>ĐƠN HÀNG MỚI #${data.orderNo}</b>
-${orderTypeText}
+${orderTypeText}${syncWarning}
 
 👤 <b>Khách hàng:</b>
 • Tên: ${data.customer.name}
