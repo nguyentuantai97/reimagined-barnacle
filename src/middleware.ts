@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getCSPHeader, getPermissionsPolicyHeader } from '@/lib/security/csp';
+import { autoHealingSystem, recordSecurityIncident } from '@/lib/security/auto-heal';
 
 // ============================================
 // Configuration
@@ -196,6 +198,15 @@ function isValidOrigin(origin: string | null): boolean {
 // ============================================
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
+  // Content Security Policy (CRITICAL for XSS prevention)
+  response.headers.set('Content-Security-Policy', getCSPHeader());
+
+  // Permissions Policy (control browser features)
+  response.headers.set('Permissions-Policy', getPermissionsPolicyHeader());
+
+  // Strict Transport Security (force HTTPS)
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+
   // Prevent XSS
   response.headers.set('X-XSS-Protection', '1; mode=block');
 
@@ -217,6 +228,10 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   // Permitted cross-domain policies
   response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
 
+  // Remove server header
+  response.headers.delete('X-Powered-By');
+  response.headers.delete('Server');
+
   return response;
 }
 
@@ -230,8 +245,13 @@ export function middleware(request: NextRequest) {
   const userAgent = request.headers.get('user-agent');
   const origin = request.headers.get('origin');
 
-  // 1. Check if IP is blocked
-  if (blockedIPs.has(clientIP)) {
+  // 1. Check if IP is blocked (including auto-healing blocks)
+  if (blockedIPs.has(clientIP) || autoHealingSystem.isIPBlocked(clientIP)) {
+    recordSecurityIncident('rate_limit_exceeded', 'high', clientIP, {
+      pathname,
+      reason: 'IP blocked',
+    });
+
     return new NextResponse('Access Denied', {
       status: 403,
       headers: { 'Content-Type': 'text/plain' },
@@ -241,6 +261,12 @@ export function middleware(request: NextRequest) {
   // 2. Check for blocked user agents (security scanners)
   if (isBlockedUserAgent(userAgent)) {
     recordSuspiciousActivity(clientIP);
+    recordSecurityIncident('suspicious_ip', 'high', clientIP, {
+      userAgent,
+      pathname,
+      reason: 'Blocked user agent (security scanner)',
+    });
+
     return new NextResponse('Forbidden', {
       status: 403,
       headers: { 'Content-Type': 'text/plain' },
@@ -250,6 +276,23 @@ export function middleware(request: NextRequest) {
   // 3. Check for malicious patterns in request
   if (isMaliciousRequest(request)) {
     recordSuspiciousActivity(clientIP);
+
+    // Detect type of attack
+    const pathname = request.nextUrl.pathname;
+    const queryString = request.nextUrl.search;
+    const fullPath = pathname + queryString;
+
+    let attackType: 'sql_injection' | 'xss_attempt' = 'sql_injection';
+    if (/<script|javascript:|on\w+=/i.test(fullPath)) {
+      attackType = 'xss_attempt';
+    }
+
+    recordSecurityIncident(attackType, 'critical', clientIP, {
+      pathname,
+      queryString,
+      attackType,
+    });
+
     return new NextResponse('Bad Request', {
       status: 400,
       headers: { 'Content-Type': 'text/plain' },

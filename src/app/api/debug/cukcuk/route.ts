@@ -3,6 +3,14 @@ import { isCukcukConfigured, fetchCukcukBranches } from '@/lib/cukcuk/client';
 import { getCukcukToken, getCukcukBaseUrl } from '@/lib/cukcuk/auth';
 
 export async function GET() {
+  // Block debug endpoint in production
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Debug endpoint disabled in production' },
+      { status: 403 }
+    );
+  }
+
   const result: Record<string, unknown> = {
     configured: isCukcukConfigured(),
     domain: process.env.CUKCUK_DOMAIN ? 'SET' : 'NOT SET',

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeString, detectAttackPatterns } from '@/lib/security';
+import { recordSecurityIncident } from '@/lib/security/auto-heal';
 
 // Tọa độ quán AN Milk Tea - 112 Đường Hoàng Phan Thái, Bình Chánh
 const SHOP_LOCATION = {
@@ -84,10 +86,41 @@ async function calculateOSRMDistance(customerLat: number, customerLon: number): 
   }
 }
 
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIP = request.headers.get('x-real-ip');
+  const cfIP = request.headers.get('cf-connecting-ip');
+
+  if (cfIP) return cfIP;
+  if (forwarded) return forwarded.split(',')[0].trim();
+  if (realIP) return realIP;
+  return 'unknown';
+}
+
 export async function POST(request: NextRequest) {
+  const clientIP = getClientIP(request);
+
   try {
     const body = await request.json();
-    const { latitude, longitude, address } = body;
+    let { latitude, longitude, address } = body;
+
+    // Sanitize address input
+    if (address) {
+      address = sanitizeString(address, 500);
+
+      // Detect attack patterns
+      if (detectAttackPatterns(address)) {
+        recordSecurityIncident('sql_injection', 'high', clientIP, {
+          endpoint: '/api/distance',
+          address: address.substring(0, 100),
+        });
+
+        return NextResponse.json(
+          { success: false, error: 'Địa chỉ không hợp lệ' },
+          { status: 400 }
+        );
+      }
+    }
 
     let customerLat = latitude;
     let customerLon = longitude;

@@ -19,19 +19,46 @@
 - ✅ KHÔNG lưu trữ thông tin thẻ
 - ✅ Chỉ hiển thị QR/STK để khách tự chuyển
 
-### 3. DevTools Protection (Production)
+### 3. Auto-Healing Security System (NEW - 2025-01-06)
+- ✅ **24/7 Tự động phát hiện và chặn tấn công**
+  - SQL injection → Block IP 7 ngày
+  - XSS attacks → Block IP 7 ngày
+  - Brute force → Block IP 1-24 giờ
+  - Suspicious IP → Block sau 3 lần cảnh báo
+- ✅ **Incident Tracking** - Ghi lại tất cả security incidents
+- ✅ **Health Check Endpoint** - `/api/security/health` để monitor 24/7
+- ✅ **Auto-unblock** - Tự động unblock IP sau timeout
+- ✅ **Admin Notifications** - Log critical incidents
+- ✅ **Attack Statistics** - Top attackers, incident trends
+
+### 4. Content Security Policy (CSP)
+- ✅ **Strict CSP Headers** - Ngăn XSS và injection attacks
+- ✅ **Permissions Policy** - Vô hiệu hóa browser features không cần thiết
+- ✅ **HSTS** - Force HTTPS với preload
+- ✅ **Frame Protection** - Ngăn clickjacking
+- ✅ **MIME Sniffing Protection** - X-Content-Type-Options: nosniff
+
+### 5. Input Validation & Sanitization
+- ✅ **Advanced Input Sanitizer** - Remove malicious characters
+- ✅ **Vietnamese Phone Validation** - Format chuẩn VN
+- ✅ **Email Validation** - RFC 5322 compliant
+- ✅ **Attack Pattern Detection** - SQL injection, XSS, path traversal
+- ✅ **Length Limits** - Prevent buffer overflow
+- ✅ **HTML Escaping** - Prevent XSS trong output
+
+### 6. DevTools Protection (Production)
 - ✅ Disable React DevTools
 - ✅ Block keyboard shortcuts (F12, Ctrl+Shift+I)
 - ✅ Console log suppression
 - ✅ Console warning message
 
-### 4. Vercel Security
+### 7. Vercel Security
 - ✅ Source maps disabled
 - ✅ Powered-by header removed
 - ✅ Strict security headers
 - ✅ API route protection
 
-### 5. GitHub Security
+### 8. GitHub Security
 - ✅ Comprehensive .gitignore
 - ✅ No secrets in code
 - ✅ .env files excluded
@@ -126,16 +153,68 @@ Nếu push lên GitHub:
    - [ ] Review suspicious transactions
    - [ ] Verify amount matches order
 
-### E. Regular Security Checks
+### E. 24/7 Security Monitoring (AUTO-HEALING)
+
+**Setup Monitoring Service (UptimeRobot hoặc Better Uptime):**
+
+1. **Health Check Endpoint**
+   - URL: `https://anmilktea.online/api/security/health`
+   - Method: GET
+   - Interval: 5 phút
+   - Alert when: status != "healthy"
+
+2. **Response Format**
+   ```json
+   {
+     "status": "healthy" | "warning" | "critical",
+     "timestamp": "2025-01-06T...",
+     "security": {
+       "health": {...},
+       "last24Hours": {
+         "totalIncidents": 0,
+         "incidentsByType": {},
+         "topAttackers": []
+       },
+       "blockedIPs": {
+         "count": 0,
+         "ips": []
+       }
+     },
+     "recommendations": [
+       "✅ All security systems operating normally."
+     ]
+   }
+   ```
+
+3. **Alert Triggers**
+   - Status "critical" → Gửi SMS/Email ngay lập tức
+   - Status "warning" → Log và monitor
+   - High attack volume (>100 incidents/24h) → Alert
+   - Critical incidents detected → Alert
+
+4. **Auto-Healing Actions**
+   - SQL Injection detected → Auto-block IP 7 ngày
+   - XSS attempt → Auto-block IP 7 ngày
+   - Brute force (high) → Auto-block IP 24 giờ
+   - Suspicious activity (3x) → Auto-block IP 1 giờ
+   - Rate limit exceeded → Temporary block
+
+### F. Regular Security Checks
+
+**Tự động (Auto-Healing System):**
+- ✅ Detect và block attacks 24/7
+- ✅ Log tất cả security incidents
+- ✅ Auto-unblock IPs sau timeout
+- ✅ Health monitoring endpoint
 
 **Hàng ngày (tuần đầu sau khi bật thanh toán):**
-- [ ] Check transaction logs
-- [ ] Review suspicious webhooks
+- [ ] Check `/api/security/health` endpoint
+- [ ] Review suspicious transactions
 - [ ] Verify payments match orders
 
 **Hàng tuần:**
-- [ ] Check Vercel logs cho suspicious activity
-- [ ] Review failed payment attempts
+- [ ] Review blocked IPs statistics
+- [ ] Check attack patterns và trends
 - [ ] Monitor rate limit violations
 
 **Hàng tháng:**
@@ -156,12 +235,17 @@ Nếu phát hiện lỗ hổng bảo mật, vui lòng liên hệ:
 
 ## Changelog
 
-- 2025-01-06: Payment security enhancement
-  - Webhook signature verification
-  - IP whitelist validation
-  - Transaction logging system
-  - Suspicious activity detection
-  - Payment webhook endpoint
+- 2025-01-06: Enterprise-grade security upgrade (AUTO-HEALING)
+  - **Auto-Healing Security System** - Tự động phát hiện và vá lỗi 24/7
+  - **24/7 Health Monitoring** - Health check endpoint
+  - **Content Security Policy (CSP)** - Strict headers
+  - **Permissions Policy** - Disable unnecessary features
+  - **Advanced Input Sanitization** - XSS, SQL injection prevention
+  - **Attack Pattern Detection** - Real-time threat detection
+  - **Incident Tracking** - Complete audit trail
+  - **Auto IP Blocking** - Based on attack severity
+  - **Payment Security** - Webhook verification, transaction logging
+  - **API Security** - All endpoints protected
 
 - 2024-12-04: Initial security implementation
   - Middleware security (rate limiting, pattern detection)
@@ -203,21 +287,37 @@ Gửi xác nhận (Email/SMS)
 
 1. **Network Layer**
    - IP Whitelist
-   - Rate Limiting
+   - Rate Limiting (auto-block)
    - DDoS Protection (Vercel)
+   - Auto-Healing IP Blocking
 
 2. **Application Layer**
-   - Input validation
-   - Pattern detection
+   - Content Security Policy (CSP)
+   - Permissions Policy
+   - Input validation & sanitization
+   - Attack pattern detection
    - Honeypot anti-bot
+   - HSTS enforcement
 
 3. **Payment Layer**
-   - Signature verification
+   - Webhook signature verification (timing-safe)
+   - IP whitelist validation
    - Amount verification
    - Transaction logging
    - Suspicious activity detection
 
-4. **Monitoring Layer**
-   - Transaction logs
-   - Error tracking
-   - Audit trail
+4. **Auto-Healing Layer** (NEW)
+   - Real-time threat detection
+   - Automatic incident response
+   - IP auto-blocking based on severity
+   - Auto-unblock after timeout
+   - Attack classification (SQL, XSS, brute force)
+   - Incident statistics tracking
+
+5. **Monitoring Layer**
+   - 24/7 Health check endpoint
+   - Security incident logs
+   - Transaction audit trail
+   - Attack statistics
+   - Top attackers tracking
+   - Performance metrics

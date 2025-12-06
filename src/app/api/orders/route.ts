@@ -12,6 +12,8 @@ import {
 } from '@/lib/security';
 import { sendTelegramOrderNotification, isTelegramConfigured } from '@/lib/notifications/telegram';
 import { isShopOpen, getClosedMessage } from '@/lib/business-hours';
+import { logOrderTransaction, TransactionStatus } from '@/lib/security/transaction-logger';
+import { recordSecurityIncident } from '@/lib/security/auto-heal';
 
 type OrderType = 'delivery' | 'pickup';
 
@@ -30,7 +32,21 @@ function isValidAmount(amount: unknown): amount is number {
   return typeof amount === 'number' && amount >= 0 && amount <= 100000000; // Max 100M VND
 }
 
+function getClientIP(request: Request): string {
+  const headers = request.headers;
+  const forwarded = headers.get('x-forwarded-for');
+  const realIP = headers.get('x-real-ip');
+  const cfIP = headers.get('cf-connecting-ip');
+
+  if (cfIP) return cfIP;
+  if (forwarded) return forwarded.split(',')[0].trim();
+  if (realIP) return realIP;
+  return 'unknown';
+}
+
 export async function POST(request: Request) {
+  const clientIP = getClientIP(request);
+
   try {
     const body: CreateOrderRequest = await request.json();
 
@@ -44,6 +60,11 @@ export async function POST(request: Request) {
 
     // Honeypot check - bots often fill hidden fields
     if (isHoneypotTriggered(body._hp)) {
+      recordSecurityIncident('suspicious_ip', 'medium', clientIP, {
+        reason: 'Honeypot triggered',
+        endpoint: '/api/orders',
+      });
+
       // Silently reject bot submissions
       return NextResponse.json({
         success: true,
@@ -60,6 +81,11 @@ export async function POST(request: Request) {
     ].filter(Boolean).join(' ');
 
     if (detectAttackPatterns(inputsToCheck)) {
+      recordSecurityIncident('sql_injection', 'critical', clientIP, {
+        endpoint: '/api/orders',
+        inputs: inputsToCheck.substring(0, 200), // Limit logged data
+      });
+
       console.warn('Attack pattern detected in order submission');
       return NextResponse.json(
         { success: false, error: 'Dữ liệu không hợp lệ' },
@@ -179,6 +205,20 @@ export async function POST(request: Request) {
 
     // TODO: Save order to local database for backup
     // This would be implemented with Drizzle ORM
+
+    // Log order transaction for audit trail
+    logOrderTransaction({
+      orderId: orderNo,
+      amount: body.total,
+      status: cukcukSynced ? TransactionStatus.SUCCESS : TransactionStatus.FAILED,
+      clientIP,
+      error: cukcukError || undefined,
+      metadata: {
+        orderType,
+        customerPhone: customer.phone,
+        itemsCount: body.items.length,
+      },
+    });
 
     // Send Telegram notification (non-blocking)
     if (isTelegramConfigured()) {
