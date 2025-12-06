@@ -54,7 +54,7 @@ export function FlyingCartIcon({ startElement, startPosition, endElement, onComp
     const timer = setTimeout(() => {
       setIcons([]);
       onComplete();
-    }, 1300); // Updated to match new 1.2s animation duration + delays
+    }, 900); // Updated to match new 0.8s animation duration + delays
 
     return () => clearTimeout(timer);
   }, [startElement, startPosition, endElement, mounted, onComplete]);

@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle, Phone, ArrowRight, Clock } from 'lucide-react';
+import { CheckCircle, Phone, ArrowRight, Clock, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -16,6 +16,14 @@ function OrderSuccessContent() {
   const orderType = searchParams.get('type') || 'delivery';
   const timeParam = searchParams.get('time');
   const isPickup = orderType === 'pickup';
+  const [copied, setCopied] = useState(false);
+
+  const copyOrderCode = () => {
+    navigator.clipboard.writeText(orderNo).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   // Format thời gian đặt hàng
   const formatOrderTime = (timestamp: string | null) => {
@@ -60,7 +68,20 @@ function OrderSuccessContent() {
           {/* Order Number */}
           <div className="bg-amber-50 rounded-lg p-4 mb-6">
             <p className="text-sm text-amber-600 mb-1">Mã đơn hàng của bạn</p>
-            <p className="text-2xl font-bold text-amber-800">{orderNo}</p>
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-2xl font-bold text-amber-800">{orderNo}</p>
+              <button
+                onClick={copyOrderCode}
+                className="p-2 hover:bg-amber-100 rounded-lg transition-colors"
+                title="Sao chép mã đơn hàng"
+              >
+                {copied ? (
+                  <Check className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Copy className="h-5 w-5 text-amber-700" />
+                )}
+              </button>
+            </div>
             {orderTime && (
               <div className="mt-3 pt-3 border-t border-amber-200">
                 <div className="flex items-center justify-center gap-2 text-sm text-amber-700">
@@ -150,6 +171,9 @@ function OrderSuccessContent() {
                 Đặt thêm món khác
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full border-amber-300 text-amber-700 hover:bg-amber-50">
+              <Link href="/track-order">Tra cứu đơn hàng</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
               <Link href="/">Về trang chủ</Link>

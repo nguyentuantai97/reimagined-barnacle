@@ -212,7 +212,7 @@
 }
 
 .animate-fly-to-cart {
-  animation: fly-to-cart 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: fly-to-cart 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
 /* Cart icon bounce animation */

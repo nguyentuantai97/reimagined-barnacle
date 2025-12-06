@@ -306,7 +306,7 @@ export function ProductModal({
         setTimeout(() => {
           setShowFlyingIcon(false);
           setCardPosition(null);
-        }, 1300); // Updated to match new 1.2s animation duration
+        }, 900); // Updated to match new 0.8s animation duration
       }, 250);
     }
   };
