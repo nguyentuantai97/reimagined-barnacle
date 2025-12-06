@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle, Phone, ArrowRight } from 'lucide-react';
+import { CheckCircle, Phone, ArrowRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -14,7 +14,29 @@ function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const orderNo = searchParams.get('orderNo') || 'N/A';
   const orderType = searchParams.get('type') || 'delivery';
+  const timeParam = searchParams.get('time');
   const isPickup = orderType === 'pickup';
+
+  // Format thời gian đặt hàng
+  const formatOrderTime = (timestamp: string | null) => {
+    if (!timestamp) return null;
+    try {
+      const date = new Date(timestamp);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return {
+        time: `${hours}:${minutes}`,
+        date: `${day}/${month}/${year}`,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const orderTime = formatOrderTime(timeParam);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center p-4">
@@ -39,6 +61,14 @@ function OrderSuccessContent() {
           <div className="bg-amber-50 rounded-lg p-4 mb-6">
             <p className="text-sm text-amber-600 mb-1">Mã đơn hàng của bạn</p>
             <p className="text-2xl font-bold text-amber-800">{orderNo}</p>
+            {orderTime && (
+              <div className="mt-3 pt-3 border-t border-amber-200">
+                <div className="flex items-center justify-center gap-2 text-sm text-amber-700">
+                  <Clock className="h-4 w-4" />
+                  <span>Đặt lúc: <strong>{orderTime.time}</strong> ngày {orderTime.date}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Info - Different for delivery vs pickup */}

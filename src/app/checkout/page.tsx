@@ -309,7 +309,8 @@ export default function CheckoutPage() {
 
       if (result.success) {
         clearCart();
-        router.push(`/order-success?orderNo=${result.data.orderNo}&type=${orderType}`);
+        const timestamp = new Date().toISOString();
+        router.push(`/order-success?orderNo=${result.data.orderNo}&type=${orderType}&time=${timestamp}`);
       } else {
         alert(result.error || 'Có lỗi xảy ra. Vui lòng thử lại.');
       }
