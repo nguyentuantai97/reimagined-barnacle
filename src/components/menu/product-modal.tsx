@@ -104,23 +104,24 @@ export function ProductModal({
   const dynamicToppingOptions = useMemo(() => {
     if (toppingProducts.length === 0) return fallbackToppingOptions;
 
-    // Thứ tự toppings theo yêu cầu
+    // Thứ tự toppings theo yêu cầu (grid 2 cột render theo hàng ngang - trái sang phải)
+    // Hàng 1: TC Trắng - TC Đen
+    // Hàng 2: TC Hoàng Kim - Sương Sáo
+    // Hàng 3: Macchiato - Kem Phô Mai
+    // Hàng 4: Thạch Dừa - Thạch Caramel
+    // Hàng 5: Hạt nổ củ năng - Pudding Trứng
+    // Hàng 6: Đào Miếng - Trái Vải
+    // Hàng 7: Hạt Sen - Chôm Chôm
+    // Cuối: Full Topping
     const toppingOrder = [
-      'TC Trắng',
-      'TC Đen',
-      'TC Hoàng Kim',
-      'Sương Sáo',
-      'Macchiato',
-      'Kem Phô Mai',
-      'Thạch Dừa',
-      'Thạch Caramel',
-      'Hạt nổ củ năng',
-      'Pudding Trứng',
-      'Đào Miếng',
-      'Trái Vải',
-      'Hạt Sen',
-      'Chôm Chôm',
-      'Full Topping',
+      'TC Trắng', 'TC Đen',                    // Hàng 1
+      'TC Hoàng Kim', 'Sương Sáo',             // Hàng 2
+      'Macchiato', 'Kem Phô Mai',              // Hàng 3
+      'Thạch Dừa', 'Thạch Caramel',            // Hàng 4
+      'Hạt nổ củ năng', 'Pudding Trứng',       // Hàng 5
+      'Đào Miếng', 'Trái Vải',                 // Hàng 6
+      'Hạt Sen', 'Chôm Chôm',                  // Hàng 7
+      'Full Topping',                          // Cuối cùng
     ];
 
     const toppingChoices = toppingProducts
