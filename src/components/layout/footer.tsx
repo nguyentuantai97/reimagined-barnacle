@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Phone, MapPin, Clock, Facebook } from 'lucide-react';
+import { Phone, MapPin, Clock, Facebook, MessageCircle } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -64,14 +64,10 @@ export function Footer() {
                 href="https://zalo.me/84976257223"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0068FF] hover:bg-[#005CE6] transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8B5A2B] hover:bg-[#0068FF] transition-colors"
                 title="Zalo"
               >
-                <svg className="h-6 w-6" viewBox="0 0 48 48" fill="none">
-                  <rect width="48" height="48" rx="12" fill="white"/>
-                  <path d="M24 8C14.6 8 7 14.8 7 23.2c0 4.2 1.8 8 4.8 10.8L10.5 42l7.2-3.2c1 .2 2 .2 3 .2 9.4 0 17-6.8 17-15.2S33.4 8 24 8z" fill="#0068FF"/>
-                  <path d="M18 19h8v2h-6v2h6v2h-6v2h6v2h-8V19zm10 0h8v2h-6v2h4v6h-2v-4h-2v4h-2V19z" fill="white"/>
-                </svg>
+                <MessageCircle className="h-5 w-5" />
               </a>
               <a
                 href="https://www.facebook.com/profile.php?id=61573607969403"
