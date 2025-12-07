@@ -239,26 +239,28 @@ export async function POST(request: Request) {
       },
     });
 
-    // Send Telegram notification (non-blocking)
-    // Bao gồm cảnh báo nếu đơn không sync được lên CUKCUK (VD: chưa mở ca)
+    // Send Telegram notification (blocking để đảm bảo gửi xong trước khi serverless function terminate)
     if (isTelegramConfigured()) {
-      sendTelegramOrderNotification({
-        orderNo,
-        orderType,
-        customer,
-        items: body.items,
-        subtotal: body.subtotal,
-        deliveryFee: body.deliveryFee,
-        total: body.total,
-        cukcukSynced,
-        cukcukError: cukcukError || undefined,
-      }).then((result) => {
-        if (!result.success) {
-          console.error('Telegram notification failed:', result.error);
+      try {
+        const telegramResult = await sendTelegramOrderNotification({
+          orderNo,
+          orderType,
+          customer,
+          items: body.items,
+          subtotal: body.subtotal,
+          deliveryFee: body.deliveryFee,
+          total: body.total,
+          cukcukSynced,
+          cukcukError: cukcukError || undefined,
+        });
+        if (!telegramResult.success) {
+          console.error('Telegram notification failed:', telegramResult.error);
+        } else {
+          console.log('[Telegram] Order notification sent successfully');
         }
-      }).catch((err) => {
+      } catch (err) {
         console.error('Telegram notification error:', err);
-      });
+      }
     }
 
     // Log order with masked sensitive data
